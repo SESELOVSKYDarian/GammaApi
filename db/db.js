@@ -8,12 +8,15 @@ const connectionString =
 
 const fallbackConfig = {
     user: process.env.DB_USER || process.env.PGUSER || process.env.POSTGRES_USER,
-    host: process.env.DB_HOST || process.env.PGHOST,
+    host:
+        process.env.DB_HOST ||
+        process.env.PGHOST ||
+        process.env.RAILWAY_PRIVATE_DOMAIN,
     database:
         process.env.DB_NAME || process.env.PGDATABASE || process.env.POSTGRES_DB,
     password:
         process.env.DB_PASSWORD || process.env.PGPASSWORD || process.env.POSTGRES_PASSWORD,
-    port: process.env.DB_PORT || process.env.PGPORT,
+    port: Number(process.env.DB_PORT || process.env.PGPORT) || 5432,
 };
 
 const pool = new Pool(
