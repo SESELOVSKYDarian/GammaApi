@@ -5,47 +5,52 @@ const upload = require("../middlewares/upload"); // importa multer
 
 // Agregar producto con imagen
 router.post("/", upload.array("imagenes", 5), async (req, res) => {
- const {
-  articulo,
-  descripcion,
-  familia_id,
-  linea,
-  codigo_color,
-  stock,
-  url,
-  precio,
-  precio_minorista,
-  precio_mayorista,
-  slider
-} = req.body;
-
+  const {
+    articulo,
+    descripcion,
+    familia_id,
+    linea,
+    codigo_color,
+    stock,
+    url,
+    precio,
+    precio_minorista,
+    precio_mayorista,
+    slider
+  } = req.body;
 
   try {
     const img_articulo = req.files.map((file) => `/imgCata/${file.filename}`);
     const sliderValue = slider === "true" || slider === true;
-  const result = await pool.query(
-    `INSERT INTO productos
-    (articulo, descripcion, familia_id, linea, img_articulo, codigo_color, stock, url, precio, precio_minorista, precio_mayorista, slider)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-     RETURNING *`,
-    [
-      articulo,
-      descripcion,
-      familia_id,
-      linea,
-      img_articulo,
-      codigo_color,
-      stock,
-      url,
-      precio,
-      precio_minorista,
-      precio_mayorista,
-      sliderValue
-    ]
-  );
+    const result = await pool.query(
+      `INSERT INTO productos
+      (articulo, descripcion, familia_id, linea, img_articulo, codigo_color, stock, url, precio, precio_minorista, precio_mayorista, slider)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        articulo,
+        descripcion,
+        familia_id,
+        linea,
+        img_articulo,
+        codigo_color,
+        stock,
+        url,
+        precio,
+        precio_minorista,
+        precio_mayorista,
+        sliderValue
+      ]
+    );
 
+    const created = await pool.query(
+      `SELECT productos.*, familias.gran_familia, familias.tipo_familia
+       FROM productos
+       LEFT JOIN familias ON productos.familia_id = familias.id
+       WHERE productos.id = ?`,
+      [result.insertId]
+    );
 
-    res.json(result.rows[0]);
+    res.json(created.rows[0] || {});
   } catch (err) {
     console.error("❌ Error al guardar producto:", err);
     res.status(500).json({ error: err.message });
@@ -61,32 +66,34 @@ router.get("/", async (req, res) => {
   const conditions = [];
   const values = [];
   if (gran_familia) {
-    conditions.push(`familias.gran_familia = $${conditions.length + 1}`);
+    conditions.push(`familias.gran_familia = ?`);
     values.push(gran_familia);
   }
   if (tipo_familia) {
-    conditions.push(`familias.tipo_familia = $${conditions.length + 1}`);
+    conditions.push(`familias.tipo_familia = ?`);
     values.push(tipo_familia);
   }
   if (codigo_color) {
-    const clean = codigo_color.replace('#', '');
-    conditions.push(`REPLACE(productos.codigo_color, '#', '') ILIKE $${conditions.length + 1}`);
+    const clean = codigo_color.replace('#', '').toLowerCase();
+    conditions.push(`LOWER(REPLACE(productos.codigo_color, '#', '')) LIKE ?`);
     values.push(`%${clean}%`);
   }
   if (q) {
     const palabras = q.trim().split(/\s+/);
     palabras.forEach((palabra) => {
+      const palabraLower = palabra.toLowerCase();
       conditions.push(
-        `(productos.articulo ILIKE $${values.length + 1} OR productos.descripcion ILIKE $${values.length + 1} OR familias.gran_familia ILIKE $${values.length + 1} OR familias.tipo_familia ILIKE $${values.length + 1})`
+        `(LOWER(productos.articulo) LIKE ? OR LOWER(productos.descripcion) LIKE ? OR LOWER(familias.gran_familia) LIKE ? OR LOWER(familias.tipo_familia) LIKE ?)`
       );
-      values.push(`%${palabra}%`);
+      values.push(`%${palabraLower}%`, `%${palabraLower}%`, `%${palabraLower}%`, `%${palabraLower}%`);
     });
   }
   if (conditions.length) {
     query += ` WHERE ` + conditions.join(" AND ");
   }
   if (limit) {
-    query += ` LIMIT ${parseInt(limit, 10)}`;
+    query += ` LIMIT ?`;
+    values.push(parseInt(limit, 10));
   }
   try {
     const result = await pool.query(query, values);
@@ -104,16 +111,16 @@ router.get("/color-codes", async (req, res) => {
   const conditions = [];
   const values = [];
   if (gran_familia) {
-    conditions.push(`familias.gran_familia = $${conditions.length + 1}`);
+    conditions.push(`familias.gran_familia = ?`);
     values.push(gran_familia);
   }
   if (tipo_familia) {
-    conditions.push(`familias.tipo_familia = $${conditions.length + 1}`);
+    conditions.push(`familias.tipo_familia = ?`);
     values.push(tipo_familia);
   }
   if (q) {
-    const clean = q.replace('#', '');
-    conditions.push(`REPLACE(productos.codigo_color, '#', '') ILIKE $${conditions.length + 1}`);
+    const clean = q.replace('#', '').toLowerCase();
+    conditions.push(`LOWER(REPLACE(productos.codigo_color, '#', '')) LIKE ?`);
     values.push(`%${clean}%`);
   }
   if (conditions.length) {
@@ -163,16 +170,23 @@ router.put("/:id", upload.array("imagenes", 5), async (req, res) => {
       precio_mayorista,
       sliderValue,
     ];
-    let query = `UPDATE productos SET articulo=$1, descripcion=$2, familia_id=$3, linea=$4, codigo_color=$5, stock=$6, url=$7, precio=$8, precio_minorista=$9, precio_mayorista=$10, slider=$11`;
+    let query = `UPDATE productos SET articulo=?, descripcion=?, familia_id=?, linea=?, codigo_color=?, stock=?, url=?, precio=?, precio_minorista=?, precio_mayorista=?, slider=?`;
     if (img_articulo) {
-      query += `, img_articulo=$12 WHERE id=$13 RETURNING *`;
+      query += `, img_articulo=? WHERE id=?`;
       baseFields.push(img_articulo, id);
     } else {
-      query += ` WHERE id=$12 RETURNING *`;
+      query += ` WHERE id=?`;
       baseFields.push(id);
     }
-    const result = await pool.query(query, baseFields);
-    res.json(result.rows[0]);
+    await pool.query(query, baseFields);
+    const updated = await pool.query(
+      `SELECT productos.*, familias.gran_familia, familias.tipo_familia
+       FROM productos
+       LEFT JOIN familias ON productos.familia_id = familias.id
+       WHERE productos.id = ?`,
+      [id]
+    );
+    res.json(updated.rows[0]);
   } catch (err) {
     console.error("❌ Error al actualizar producto:", err);
     res.status(500).json({ error: err.message });
@@ -183,7 +197,7 @@ router.put("/:id", upload.array("imagenes", 5), async (req, res) => {
 router.delete("/:id", async (req, res) => {
   const { id } = req.params;
   try {
-    await pool.query("DELETE FROM productos WHERE id = $1", [id]);
+    await pool.query("DELETE FROM productos WHERE id = ?", [id]);
     res.json({ success: true });
   } catch (err) {
     console.error("❌ Error al eliminar producto:", err);
@@ -200,7 +214,7 @@ router.get('/slug/:slug', async (req, res) => {
       `SELECT productos.*, familias.gran_familia, familias.tipo_familia
        FROM productos
        JOIN familias ON productos.familia_id = familias.id
-       WHERE productos.url = $1`,
+       WHERE productos.url = ?`,
       [slug]
     );
 
@@ -220,12 +234,11 @@ router.get("/familia/:familia_id", async (req, res) => {
   const { familia_id } = req.params;
 
   try {
-    // Asumiendo que familia_id es numérico (ajustalo si es string)
     const result = await pool.query(
       `SELECT productos.*, familias.gran_familia, familias.tipo_familia
        FROM productos
        JOIN familias ON productos.familia_id = familias.id
-       WHERE productos.familia_id = $1`,
+       WHERE productos.familia_id = ?`,
       [familia_id]
     );
 
@@ -243,7 +256,7 @@ router.get("/slider", async (_req, res) => {
         `SELECT productos.*, familias.gran_familia, familias.tipo_familia
          FROM productos
          JOIN familias ON productos.familia_id = familias.id
-         WHERE productos.slider = true`
+         WHERE productos.slider = TRUE`
       );
     res.json(result.rows);
   } catch (err) {
@@ -257,9 +270,17 @@ router.patch("/:id/slider", async (req, res) => {
   const { id } = req.params;
   const { slider } = req.body;
   try {
+    const sliderValue = slider === "true" || slider === true;
+    await pool.query(
+      "UPDATE productos SET slider = ? WHERE id = ?",
+      [sliderValue, id]
+    );
     const result = await pool.query(
-      "UPDATE productos SET slider = $1 WHERE id = $2 RETURNING *",
-      [slider, id]
+      `SELECT productos.*, familias.gran_familia, familias.tipo_familia
+       FROM productos
+       LEFT JOIN familias ON productos.familia_id = familias.id
+       WHERE productos.id = ?`,
+      [id]
     );
     res.json(result.rows[0]);
   } catch (err) {

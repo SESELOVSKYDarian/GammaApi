@@ -36,10 +36,13 @@ const createCategory = async (req, res) => {
     const { name } = req.body;
     const imagePath = req.file ? `/ideas/${req.file.filename}` : null;
     const result = await pool.query(
-      'INSERT INTO idea_categories(name, image_url) VALUES($1,$2) RETURNING id, name, image_url',
+      'INSERT INTO idea_categories(name, image_url) VALUES(?, ?)',
       [name, imagePath]
     );
-    res.status(201).json({ id: result.rows[0].id, name: result.rows[0].name, imageUrl: result.rows[0].image_url });
+    const created = await pool.query('SELECT id, name, image_url FROM idea_categories WHERE id = ?', [result.insertId]);
+    const category = created.rows[0];
+    if (!category) return res.status(500).json({ error: 'Error creating category' });
+    res.status(201).json({ id: category.id, name: category.name, imageUrl: category.image_url });
   } catch (err) {
     console.error('Error creating category', err);
     res.status(500).json({ error: 'Error creating category' });
@@ -52,17 +55,18 @@ const updateCategory = async (req, res) => {
     const { name } = req.body;
     const imagePath = req.file ? `/ideas/${req.file.filename}` : null;
     const fields = [name];
-    let query = 'UPDATE idea_categories SET name=$1';
+    let query = 'UPDATE idea_categories SET name=?';
     if (imagePath) {
-      query += ', image_url=$2 WHERE id=$3 RETURNING id, name, image_url';
+      query += ', image_url=? WHERE id=?';
       fields.push(imagePath, id);
     } else {
-      query += ' WHERE id=$2 RETURNING id, name, image_url';
+      query += ' WHERE id=?';
       fields.push(id);
     }
-    const result = await pool.query(query, fields);
-    if (!result.rows.length) return res.status(404).json({ error: 'Category not found' });
-    res.json({ id: result.rows[0].id, name: result.rows[0].name, imageUrl: result.rows[0].image_url });
+    await pool.query(query, fields);
+    const fetched = await pool.query('SELECT id, name, image_url FROM idea_categories WHERE id = ?', [id]);
+    if (!fetched.rows.length) return res.status(404).json({ error: 'Category not found' });
+    res.json({ id: fetched.rows[0].id, name: fetched.rows[0].name, imageUrl: fetched.rows[0].image_url });
   } catch (err) {
     console.error('Error updating category', err);
     res.status(500).json({ error: 'Error updating category' });
@@ -81,17 +85,21 @@ const createItem = async (req, res) => {
       : imageUrl;
     const result = await pool.query(
       `INSERT INTO idea_items(category_id, title, type, url, image_url)
-       VALUES($1,$2,$3,$4,$5)
-       RETURNING id, category_id, title, type, url, image_url`,
+       VALUES(?, ?, ?, ?, ?)`,
       [categoryId, title, type, finalUrl, imagePath]
     );
+    const inserted = await pool.query(
+      'SELECT id, category_id, title, type, url, image_url FROM idea_items WHERE id = ?',
+      [result.insertId]
+    );
+    if (!inserted.rows[0]) return res.status(500).json({ error: 'Error creating item' });
     res.status(201).json({
-      id: result.rows[0].id,
-      category_id: result.rows[0].category_id,
-      title: result.rows[0].title,
-      type: result.rows[0].type,
-      url: result.rows[0].url,
-      imageUrl: result.rows[0].image_url,
+      id: inserted.rows[0].id,
+      category_id: inserted.rows[0].category_id,
+      title: inserted.rows[0].title,
+      type: inserted.rows[0].type,
+      url: inserted.rows[0].url,
+      imageUrl: inserted.rows[0].image_url,
     });
   } catch (err) {
     console.error('Error creating item', err);
@@ -110,9 +118,13 @@ const updateItem = async (req, res) => {
     const imagePath = req.files && req.files.image
       ? `/ideas/${req.files.image[0].filename}`
       : imageUrl;
-    const result = await pool.query(
-      `UPDATE idea_items SET category_id=$1, title=$2, type=$3, url=$4, image_url=$5 WHERE id=$6 RETURNING id, category_id, title, type, url, image_url`,
+    await pool.query(
+      `UPDATE idea_items SET category_id=?, title=?, type=?, url=?, image_url=? WHERE id=?`,
       [categoryId, title, type, finalUrl, imagePath, id]
+    );
+    const result = await pool.query(
+      'SELECT id, category_id, title, type, url, image_url FROM idea_items WHERE id = ?',
+      [id]
     );
     if (!result.rows.length) return res.status(404).json({ error: 'Item not found' });
     res.json({
@@ -130,16 +142,16 @@ const updateItem = async (req, res) => {
 };
 
 const deleteCategory = async (req, res) => {
-  const client = await pool.connect();
+  const client = await pool.getConnection();
   try {
     const { id } = req.params;
 
-    await client.query('BEGIN');
+    await client.beginTransaction();
     // Borrar hijos primero para evitar violaciones de FK
-    await client.query('DELETE FROM idea_items WHERE category_id=$1', [id]);
+    await client.query('DELETE FROM idea_items WHERE category_id=?', [id]);
     // Borrar la categoría
-    const delCat = await client.query('DELETE FROM idea_categories WHERE id=$1', [id]);
-    await client.query('COMMIT');
+    const delCat = await client.query('DELETE FROM idea_categories WHERE id=?', [id]);
+    await client.commit();
 
     if (delCat.rowCount === 0) {
       return res.status(404).json({ error: 'Category not found' });
@@ -147,7 +159,7 @@ const deleteCategory = async (req, res) => {
 
     res.sendStatus(204);
   } catch (err) {
-    await client.query('ROLLBACK');
+    await client.rollback();
     console.error('Error deleting category', err);
     res.status(500).json({ error: 'Error deleting category' });
   } finally {
@@ -158,7 +170,7 @@ const deleteCategory = async (req, res) => {
 const deleteItem = async (req, res) => {
   try {
     const { id } = req.params;
-    const result = await pool.query('DELETE FROM idea_items WHERE id=$1', [id]);
+    const result = await pool.query('DELETE FROM idea_items WHERE id=?', [id]);
 
     if (result.rowCount === 0) {
       return res.status(404).json({ error: 'Item not found' });

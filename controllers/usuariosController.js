@@ -21,11 +21,11 @@ exports.createUsuario = async (req, res) => {
   try {
     const result = await pool.query(
       `INSERT INTO usuarios (cliente, contrasena, rol, lista_de_precio)
-       VALUES ($1, $2, $3, $4)
-       RETURNING *`,
+       VALUES (?, ?, ?, ?)`,
       [cliente, contrasena, rol || 'cliente', lista_de_precio]
     );
-    res.status(201).json(result.rows[0]);
+    const created = await pool.query('SELECT * FROM usuarios WHERE id = ?', [result.insertId]);
+    res.status(201).json(created.rows[0]);
   } catch (err) {
     console.error("Error en createUsuario:", err);
     res.status(500).json({ error: err.message });
@@ -39,11 +39,12 @@ exports.updateUsuario = async (req, res) => {
   const { cliente, contrasena, rol, lista_de_precio } = req.body;
 
   try {
-    const result = await pool.query(
-      'UPDATE usuarios SET cliente=$1, contrasena=$2, rol=$3, lista_de_precio=$4 WHERE id=$5 RETURNING *',
+    await pool.query(
+      'UPDATE usuarios SET cliente=?, contrasena=?, rol=?, lista_de_precio=? WHERE id=?',
       [cliente, contrasena, rol, lista_de_precio, id]
     );
-    res.json(result.rows[0]);
+    const updated = await pool.query('SELECT * FROM usuarios WHERE id = ?', [id]);
+    res.json(updated.rows[0]);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -53,7 +54,7 @@ exports.updateUsuario = async (req, res) => {
 exports.deleteUsuario = async (req, res) => {
   const { id } = req.params;
   try {
-    await pool.query('DELETE FROM usuarios WHERE id=$1', [id]);
+    await pool.query('DELETE FROM usuarios WHERE id=?', [id]);
     res.json({ message: 'Usuario eliminado' });
   } catch (err) {
     res.status(500).json({ error: err.message });

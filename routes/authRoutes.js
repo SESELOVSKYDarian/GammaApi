@@ -21,7 +21,7 @@ router.post('/login', async (req, res) => {
       `SELECT u.*, p.porcentaje_a_agregar
        FROM usuarios u
        LEFT JOIN precios p ON u.lista_de_precio = p.lista_de_precio_id
-       WHERE u.id = $1`,
+       WHERE u.id = ?`,
       [id]
     );
     if (result.rows.length === 0) {

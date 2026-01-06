@@ -82,7 +82,7 @@ app.get('/api/productos', async (_, res) => {
 app.post('/api/productos', async (req, res) => {
   try {
     const { nombre, marca, modelo, stock, etiquetas, precio } = req.body;
-    await pool.query('INSERT INTO producto(nombre, marca, modelo, stock, etiquetas, precio) VALUES($1, $2, $3, $4, $5, $6)',
+    await pool.query('INSERT INTO producto(nombre, marca, modelo, stock, etiquetas, precio) VALUES(?, ?, ?, ?, ?, ?)',
       [nombre, marca, modelo, stock, etiquetas, precio]);
     res.json({ success: true });
   } catch (error) {
@@ -94,7 +94,7 @@ app.post('/api/productos', async (req, res) => {
 app.put('/api/productos/:id', async (req, res) => {
   try {
     const { nombre, marca, modelo, stock, etiquetas, precio } = req.body;
-    await pool.query('UPDATE productos SET nombre=$1, marca=$2, modelo=$3, stock=$4, etiquetas=$5, precio=$6 WHERE id=$7',
+    await pool.query('UPDATE productos SET nombre=?, marca=?, modelo=?, stock=?, etiquetas=?, precio=? WHERE id=?',
       [nombre, marca, modelo, stock, etiquetas, precio, req.params.id]);
     res.json({ success: true });
   } catch (error) {
@@ -104,14 +104,14 @@ app.put('/api/productos/:id', async (req, res) => {
 });
 
 app.delete('/api/productos/:id', async (req, res) => {
-  await pool.query('DELETE FROM productos WHERE id=$1', [req.params.id]);
+  await pool.query('DELETE FROM productos WHERE id=?', [req.params.id]);
   res.json({ success: true });
 });
 
 app.get('/api/productos/slug/:slug', async (req, res) => {
   try {
     const { slug } = req.params;
-    const result = await pool.query('SELECT * FROM productos WHERE url = $1', [slug]);
+    const result = await pool.query('SELECT * FROM productos WHERE url = ?', [slug]);
     if (result.rows.length === 0) return res.status(404).json({ error: "Producto no encontrado" });
     res.json(result.rows[0]);
   } catch (err) {

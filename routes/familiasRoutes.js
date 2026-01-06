@@ -42,10 +42,13 @@ router.post('/', upload.single('imagen'), async (req, res) => {
         const inserted = [];
         for (const tipo of tipos) {
             const r = await pool.query(
-                'INSERT INTO familias (gran_familia, tipo_familia, usar_imagen, imagen_subtitulo) VALUES ($1,$2,$3,$4) RETURNING *',
+                'INSERT INTO familias (gran_familia, tipo_familia, usar_imagen, imagen_subtitulo) VALUES (?,?,?,?)',
                 [gran_familia, tipo, usar_imagen === 'true', imgPath]
             );
-            inserted.push(r.rows[0]);
+            if (r.insertId) {
+                const fetched = await pool.query('SELECT * FROM familias WHERE id = ?', [r.insertId]);
+                if (fetched.rows[0]) inserted.push(fetched.rows[0]);
+            }
         }
         res.json(inserted.length === 1 ? inserted[0] : inserted);
     } catch (err) {
@@ -56,7 +59,7 @@ router.post('/', upload.single('imagen'), async (req, res) => {
 // Eliminar una familia
 router.delete('/:id', async (req, res) => {
     try {
-        await pool.query('DELETE FROM familias WHERE id = $1', [req.params.id]);
+        await pool.query('DELETE FROM familias WHERE id = ?', [req.params.id]);
         res.json({ success: true });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -69,17 +72,18 @@ router.put('/:id', upload.single('imagen'), async (req, res) => {
     const { gran_familia, tipo_familia, usar_imagen } = req.body;
     const imgPath = req.file ? `assets/familias/${req.file.filename}` : null;
     try {
-        let query = 'UPDATE familias SET gran_familia = $1, tipo_familia = $2, usar_imagen = $3';
+        let query = 'UPDATE familias SET gran_familia = ?, tipo_familia = ?, usar_imagen = ?';
         const params = [gran_familia, tipo_familia, usar_imagen === 'true'];
         if (imgPath) {
-            query += ', imagen_subtitulo = $4 WHERE id = $5 RETURNING *';
+            query += ', imagen_subtitulo = ? WHERE id = ?';
             params.push(imgPath, id);
         } else {
-            query += ' WHERE id = $4 RETURNING *';
+            query += ' WHERE id = ?';
             params.push(id);
         }
-        const result = await pool.query(query, params);
-        res.json(result.rows[0]);
+        await pool.query(query, params);
+        const updated = await pool.query('SELECT * FROM familias WHERE id = ?', [id]);
+        res.json(updated.rows[0]);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
