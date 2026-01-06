@@ -16,13 +16,14 @@ exports.getUsuarios = async (req, res) => {
 
 // Crear usuario
 exports.createUsuario = async (req, res) => {
-  const { id, cliente, contrasena, rol, lista_de_precio } = req.body;
-  console.log("Datos recibidos:", { id, cliente, contrasena, rol, lista_de_precio });
+  const { cliente, contrasena, rol, lista_de_precio } = req.body;
 
   try {
     const result = await pool.query(
-      'INSERT INTO usuarios (id, cliente, contrasena, rol, lista_de_precio) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-      [id, cliente, contrasena, rol, lista_de_precio]
+      `INSERT INTO usuarios (cliente, contrasena, rol, lista_de_precio)
+       VALUES ($1, $2, $3, $4)
+       RETURNING *`,
+      [cliente, contrasena, rol || 'cliente', lista_de_precio]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
@@ -30,6 +31,7 @@ exports.createUsuario = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
 
 // Actualizar usuario
 exports.updateUsuario = async (req, res) => {

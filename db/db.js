@@ -1,9 +1,10 @@
-import pg from "pg";
-const { Pool } = pg;
+// db.js (CommonJS)
+const { Pool } = require("pg");
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: false
+  // Si usás DATABASE_PUBLIC_URL (proxy externo), activá SSL:
+  // ssl: { rejectUnauthorized: false }
 });
 
-export default pool;
+module.exports = pool;
