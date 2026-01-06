@@ -1,19 +1,19 @@
-const pool = require("../db/db");
+const pool = require('../db/db');
 
 const getIdeas = async (_req, res) => {
   try {
-    const [categoriesRows] = await pool.query(
-      "SELECT id, name, image_url FROM idea_categories ORDER BY id"
+    const categoriesRes = await pool.query(
+      'SELECT id, name, image_url FROM idea_categories ORDER BY id'
     );
-    const [itemsRows] = await pool.query(
-      "SELECT id, category_id, title, type, url, image_url FROM idea_items ORDER BY id"
+    const itemsRes = await pool.query(
+      'SELECT id, category_id, title, type, url, image_url FROM idea_items ORDER BY id'
     );
 
-    const categories = categoriesRows.map((cat) => ({
+    const categories = categoriesRes.rows.map((cat) => ({
       id: cat.id,
       name: cat.name,
       imageUrl: cat.image_url,
-      cards: itemsRows
+      cards: itemsRes.rows
         .filter((item) => item.category_id === cat.id)
         .map((item) => ({
           id: item.id,
@@ -26,8 +26,8 @@ const getIdeas = async (_req, res) => {
 
     res.json(categories);
   } catch (err) {
-    console.error("Error fetching ideas", err);
-    res.status(500).json({ error: "Error fetching ideas" });
+    console.error('Error fetching ideas', err);
+    res.status(500).json({ error: 'Error fetching ideas' });
   }
 };
 
@@ -35,25 +35,14 @@ const createCategory = async (req, res) => {
   try {
     const { name } = req.body;
     const imagePath = req.file ? `/ideas/${req.file.filename}` : null;
-
-    const [result] = await pool.query(
-      "INSERT INTO idea_categories(name, image_url) VALUES(?, ?)",
+    const result = await pool.query(
+      'INSERT INTO idea_categories(name, image_url) VALUES($1,$2) RETURNING id, name, image_url',
       [name, imagePath]
     );
-
-    const [rows] = await pool.query(
-      "SELECT id, name, image_url FROM idea_categories WHERE id = ?",
-      [result.insertId]
-    );
-
-    res.status(201).json({
-      id: rows[0].id,
-      name: rows[0].name,
-      imageUrl: rows[0].image_url,
-    });
+    res.status(201).json({ id: result.rows[0].id, name: result.rows[0].name, imageUrl: result.rows[0].image_url });
   } catch (err) {
-    console.error("Error creating category", err);
-    res.status(500).json({ error: "Error creating category" });
+    console.error('Error creating category', err);
+    res.status(500).json({ error: 'Error creating category' });
   }
 };
 
@@ -62,74 +51,51 @@ const updateCategory = async (req, res) => {
     const { id } = req.params;
     const { name } = req.body;
     const imagePath = req.file ? `/ideas/${req.file.filename}` : null;
-
+    const fields = [name];
+    let query = 'UPDATE idea_categories SET name=$1';
     if (imagePath) {
-      const [r] = await pool.query(
-        "UPDATE idea_categories SET name=?, image_url=? WHERE id=?",
-        [name, imagePath, id]
-      );
-      if (r.affectedRows === 0) return res.status(404).json({ error: "Category not found" });
+      query += ', image_url=$2 WHERE id=$3 RETURNING id, name, image_url';
+      fields.push(imagePath, id);
     } else {
-      const [r] = await pool.query(
-        "UPDATE idea_categories SET name=? WHERE id=?",
-        [name, id]
-      );
-      if (r.affectedRows === 0) return res.status(404).json({ error: "Category not found" });
+      query += ' WHERE id=$2 RETURNING id, name, image_url';
+      fields.push(id);
     }
-
-    const [rows] = await pool.query(
-      "SELECT id, name, image_url FROM idea_categories WHERE id = ?",
-      [id]
-    );
-    if (!rows.length) return res.status(404).json({ error: "Category not found" });
-
-    res.json({
-      id: rows[0].id,
-      name: rows[0].name,
-      imageUrl: rows[0].image_url,
-    });
+    const result = await pool.query(query, fields);
+    if (!result.rows.length) return res.status(404).json({ error: 'Category not found' });
+    res.json({ id: result.rows[0].id, name: result.rows[0].name, imageUrl: result.rows[0].image_url });
   } catch (err) {
-    console.error("Error updating category", err);
-    res.status(500).json({ error: "Error updating category" });
+    console.error('Error updating category', err);
+    res.status(500).json({ error: 'Error updating category' });
   }
 };
 
 const createItem = async (req, res) => {
   try {
     const { categoryId, title, type, url, imageUrl } = req.body;
-
     let finalUrl = url;
-    if (type === "pdf" && req.files && req.files.file) {
+    if (type === 'pdf' && req.files && req.files.file) {
       finalUrl = `/ideas/${req.files.file[0].filename}`;
     }
-
-    const imagePath =
-      req.files && req.files.image
-        ? `/ideas/${req.files.image[0].filename}`
-        : imageUrl;
-
-    const [result] = await pool.query(
+    const imagePath = req.files && req.files.image
+      ? `/ideas/${req.files.image[0].filename}`
+      : imageUrl;
+    const result = await pool.query(
       `INSERT INTO idea_items(category_id, title, type, url, image_url)
-       VALUES(?, ?, ?, ?, ?)`,
+       VALUES($1,$2,$3,$4,$5)
+       RETURNING id, category_id, title, type, url, image_url`,
       [categoryId, title, type, finalUrl, imagePath]
     );
-
-    const [rows] = await pool.query(
-      "SELECT id, category_id, title, type, url, image_url FROM idea_items WHERE id = ?",
-      [result.insertId]
-    );
-
     res.status(201).json({
-      id: rows[0].id,
-      category_id: rows[0].category_id,
-      title: rows[0].title,
-      type: rows[0].type,
-      url: rows[0].url,
-      imageUrl: rows[0].image_url,
+      id: result.rows[0].id,
+      category_id: result.rows[0].category_id,
+      title: result.rows[0].title,
+      type: result.rows[0].type,
+      url: result.rows[0].url,
+      imageUrl: result.rows[0].image_url,
     });
   } catch (err) {
-    console.error("Error creating item", err);
-    res.status(500).json({ error: "Error creating item" });
+    console.error('Error creating item', err);
+    res.status(500).json({ error: 'Error creating item' });
   }
 };
 
@@ -137,90 +103,71 @@ const updateItem = async (req, res) => {
   try {
     const { id } = req.params;
     const { categoryId, title, type, url, imageUrl } = req.body;
-
     let finalUrl = url;
-    if (type === "pdf" && req.files && req.files.file) {
+    if (type === 'pdf' && req.files && req.files.file) {
       finalUrl = `/ideas/${req.files.file[0].filename}`;
     }
-
-    const imagePath =
-      req.files && req.files.image
-        ? `/ideas/${req.files.image[0].filename}`
-        : imageUrl;
-
-    const [r] = await pool.query(
-      `UPDATE idea_items
-       SET category_id=?, title=?, type=?, url=?, image_url=?
-       WHERE id=?`,
+    const imagePath = req.files && req.files.image
+      ? `/ideas/${req.files.image[0].filename}`
+      : imageUrl;
+    const result = await pool.query(
+      `UPDATE idea_items SET category_id=$1, title=$2, type=$3, url=$4, image_url=$5 WHERE id=$6 RETURNING id, category_id, title, type, url, image_url`,
       [categoryId, title, type, finalUrl, imagePath, id]
     );
-
-    if (r.affectedRows === 0) return res.status(404).json({ error: "Item not found" });
-
-    const [rows] = await pool.query(
-      "SELECT id, category_id, title, type, url, image_url FROM idea_items WHERE id = ?",
-      [id]
-    );
-    if (!rows.length) return res.status(404).json({ error: "Item not found" });
-
+    if (!result.rows.length) return res.status(404).json({ error: 'Item not found' });
     res.json({
-      id: rows[0].id,
-      category_id: rows[0].category_id,
-      title: rows[0].title,
-      type: rows[0].type,
-      url: rows[0].url,
-      imageUrl: rows[0].image_url,
+      id: result.rows[0].id,
+      category_id: result.rows[0].category_id,
+      title: result.rows[0].title,
+      type: result.rows[0].type,
+      url: result.rows[0].url,
+      imageUrl: result.rows[0].image_url,
     });
   } catch (err) {
-    console.error("Error updating item", err);
-    res.status(500).json({ error: "Error updating item" });
+    console.error('Error updating item', err);
+    res.status(500).json({ error: 'Error updating item' });
   }
 };
 
 const deleteCategory = async (req, res) => {
-  const conn = await pool.getConnection();
+  const client = await pool.connect();
   try {
     const { id } = req.params;
 
-    await conn.beginTransaction();
-
+    await client.query('BEGIN');
     // Borrar hijos primero para evitar violaciones de FK
-    await conn.query("DELETE FROM idea_items WHERE category_id=?", [id]);
+    await client.query('DELETE FROM idea_items WHERE category_id=$1', [id]);
+    // Borrar la categoría
+    const delCat = await client.query('DELETE FROM idea_categories WHERE id=$1', [id]);
+    await client.query('COMMIT');
 
-    // Borrar categoría
-    const [delCat] = await conn.query("DELETE FROM idea_categories WHERE id=?", [
-      id,
-    ]);
-
-    await conn.commit();
-
-    if (delCat.affectedRows === 0) {
-      return res.status(404).json({ error: "Category not found" });
+    if (delCat.rowCount === 0) {
+      return res.status(404).json({ error: 'Category not found' });
     }
 
     res.sendStatus(204);
   } catch (err) {
-    await conn.rollback();
-    console.error("Error deleting category", err);
-    res.status(500).json({ error: "Error deleting category" });
+    await client.query('ROLLBACK');
+    console.error('Error deleting category', err);
+    res.status(500).json({ error: 'Error deleting category' });
   } finally {
-    conn.release();
+    client.release();
   }
 };
 
 const deleteItem = async (req, res) => {
   try {
     const { id } = req.params;
-    const [r] = await pool.query("DELETE FROM idea_items WHERE id=?", [id]);
+    const result = await pool.query('DELETE FROM idea_items WHERE id=$1', [id]);
 
-    if (r.affectedRows === 0) {
-      return res.status(404).json({ error: "Item not found" });
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: 'Item not found' });
     }
 
     res.sendStatus(204);
   } catch (err) {
-    console.error("Error deleting item", err);
-    res.status(500).json({ error: "Error deleting item" });
+    console.error('Error deleting item', err);
+    res.status(500).json({ error: 'Error deleting item' });
   }
 };
 
