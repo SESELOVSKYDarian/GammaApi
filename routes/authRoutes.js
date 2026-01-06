@@ -1,7 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const pool = require('../db/db').default;
-
+const pool = require('../db/db');
 const nodemailer = require('nodemailer');
 
 let adminCode = null;

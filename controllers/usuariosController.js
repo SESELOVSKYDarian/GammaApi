@@ -1,5 +1,4 @@
-const pool = require('../db/db').default;
-
+const pool = require('../db/db');
 
 // Obtener todos los usuarios
 exports.getUsuarios = async (req, res) => {
