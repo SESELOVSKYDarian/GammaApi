@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const pool = require('../db/db');
+const pool = require('../db/db').default;
+
 
 // Obtener todas las listas de precios
 router.get('/', async (_req, res) => {

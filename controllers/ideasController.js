@@ -1,4 +1,5 @@
-const pool = require('../db/db');
+const pool = require('../db/db').default;
+
 
 const getIdeas = async (_req, res) => {
   try {
