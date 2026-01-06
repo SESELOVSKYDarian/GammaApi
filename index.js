@@ -28,11 +28,23 @@ app.use("/api/contacto", contactoRoute);
 app.use('/api/familias', require('./routes/familiasRoutes'));
 app.use('/api/usuarios', require('./routes/usuariosRoutes'));
 app.use('/api/productos', require('./routes/productosRoutes'));
-
 app.use('/api/precios', require('./routes/preciosRoutes'));
-
 app.use('/api/login', require('./routes/authRoutes'));
 app.use('/api/ideas', require('./routes/ideasRoutes'));
+
+// 🔀 Alias sin prefijo /api para compatibilidad con el frontend antiguo
+app.use('/usuarios', require('./routes/usuariosRoutes'));
+
+// 🩺 Ruta de salud para validar que el servicio y la DB responden
+app.get('/api/health', async (_req, res) => {
+  try {
+    await pool.query('SELECT 1');
+    res.json({ status: 'ok', db: 'connected' });
+  } catch (err) {
+    console.error('❌ Healthcheck DB error:', err);
+    res.status(500).json({ status: 'error', db: 'unreachable', detail: err.message });
+  }
+});
 
 app.use('/imgCata', express.static(path.join(__dirname, '../GammaVase/public/imgCata')));
 app.use('/ideas', express.static(path.join(__dirname, '../GammaVase/public/ideas')));
@@ -45,6 +57,11 @@ if (fs.existsSync(frontendBuildPath)) {
   app.get('*', (req, res, next) => {
     if (req.path.startsWith('/api')) return next();
     return res.sendFile(path.join(frontendBuildPath, 'index.html'));
+  });
+} else {
+  // Respuesta simple para evitar "Cannot GET /" cuando no hay build estático
+  app.get('/', (_req, res) => {
+    res.json({ status: 'ok', message: 'Gamma API en ejecución' });
   });
 }
 
