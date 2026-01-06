@@ -1,10 +1,10 @@
-const pool = require('../db/db');
+const pool = require("../db/db");
 
 // Obtener todos los usuarios
-exports.getUsuarios = async (req, res) => {
+exports.getUsuarios = async (_req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM usuarios');
-    res.json(result.rows);
+    const [rows] = await pool.query("SELECT * FROM usuarios");
+    res.json(rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -16,11 +16,13 @@ exports.createUsuario = async (req, res) => {
   console.log("Datos recibidos:", { id, cliente, contrasena, rol, lista_de_precio });
 
   try {
-    const result = await pool.query(
-      'INSERT INTO usuarios (id, cliente, contrasena, rol, lista_de_precio) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+    await pool.query(
+      "INSERT INTO usuarios (id, cliente, contrasena, rol, lista_de_precio) VALUES (?, ?, ?, ?, ?)",
       [id, cliente, contrasena, rol, lista_de_precio]
     );
-    res.status(201).json(result.rows[0]);
+
+    const [rows] = await pool.query("SELECT * FROM usuarios WHERE id = ?", [id]);
+    res.status(201).json(rows[0]);
   } catch (err) {
     console.error("Error en createUsuario:", err);
     res.status(500).json({ error: err.message });
@@ -33,11 +35,15 @@ exports.updateUsuario = async (req, res) => {
   const { cliente, contrasena, rol, lista_de_precio } = req.body;
 
   try {
-    const result = await pool.query(
-      'UPDATE usuarios SET cliente=$1, contrasena=$2, rol=$3, lista_de_precio=$4 WHERE id=$5 RETURNING *',
+    const [r] = await pool.query(
+      "UPDATE usuarios SET cliente=?, contrasena=?, rol=?, lista_de_precio=? WHERE id=?",
       [cliente, contrasena, rol, lista_de_precio, id]
     );
-    res.json(result.rows[0]);
+
+    if (r.affectedRows === 0) return res.status(404).json({ error: "Usuario no encontrado" });
+
+    const [rows] = await pool.query("SELECT * FROM usuarios WHERE id = ?", [id]);
+    res.json(rows[0]);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -47,8 +53,9 @@ exports.updateUsuario = async (req, res) => {
 exports.deleteUsuario = async (req, res) => {
   const { id } = req.params;
   try {
-    await pool.query('DELETE FROM usuarios WHERE id=$1', [id]);
-    res.json({ message: 'Usuario eliminado' });
+    const [r] = await pool.query("DELETE FROM usuarios WHERE id=?", [id]);
+    if (r.affectedRows === 0) return res.status(404).json({ error: "Usuario no encontrado" });
+    res.json({ message: "Usuario eliminado" });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
