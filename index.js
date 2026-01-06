@@ -41,6 +41,17 @@ app.get("/", (req, res) => {
   res.send("API OK");
 });
 
+app.get("/api/debug/env", (req, res) => {
+  res.json({
+    NODE_ENV: process.env.NODE_ENV,
+    DB_HOST: process.env.DB_HOST,
+    DB_PORT: process.env.DB_PORT,
+    DB_USER_present: Boolean(process.env.DB_USER),
+    DB_PASSWORD_present: Boolean(process.env.DB_PASSWORD),
+    DB_NAME: process.env.DB_NAME,
+  });
+});
+
 
 /** Routes */
 app.use("/api", authRoutes);
