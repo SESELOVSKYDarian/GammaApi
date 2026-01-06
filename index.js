@@ -26,6 +26,10 @@ app.use(
   })
 );
 
+console.log("BOOTED VERSION 2026-01-06 A");
+app.get("/_ping", (req, res) => res.send("pong"));
+
+
 if (process.env.NODE_ENV !== "production") {
   require("dotenv").config();
 }
