@@ -11,11 +11,17 @@ const fallbackConfig = {
     host:
         process.env.DB_HOST ||
         process.env.PGHOST ||
+<<<<<<< HEAD
         process.env.RAILWAY_PRIVATE_DOMAIN,
+=======
+        process.env.RAILWAY_PRIVATE_DOMAIN ||
+        process.env.RAILWAY_TCP_PROXY_DOMAIN,
+>>>>>>> origin/codex/edit-project-for-railway-deployment-94ecb2
     database:
         process.env.DB_NAME || process.env.PGDATABASE || process.env.POSTGRES_DB,
     password:
         process.env.DB_PASSWORD || process.env.PGPASSWORD || process.env.POSTGRES_PASSWORD,
+<<<<<<< HEAD
     port: Number(process.env.DB_PORT || process.env.PGPORT) || 5432,
 };
 
@@ -30,6 +36,38 @@ const pool = new Pool(
               ssl: sslEnabled ? { rejectUnauthorized: false } : false,
           }
 );
+=======
+    port:
+        Number(
+            process.env.DB_PORT ||
+                process.env.PGPORT ||
+                process.env.RAILWAY_TCP_PROXY_PORT
+        ) || 5432,
+    connectionTimeoutMillis: 8_000,
+};
+
+const poolOptions = connectionString
+    ? {
+          connectionString,
+          ssl: sslEnabled ? { rejectUnauthorized: false } : false,
+          connectionTimeoutMillis: 8_000,
+      }
+    : {
+          ...fallbackConfig,
+          ssl: sslEnabled ? { rejectUnauthorized: false } : false,
+      };
+
+console.log(
+    `📡 Configuración de PostgreSQL: ${connectionString ? 'connection string' : 'parámetros separados'}`,
+    {
+        host: poolOptions.host || '(en URI)',
+        port: poolOptions.port || '(en URI)',
+        ssl: sslEnabled ? 'on' : 'off',
+    }
+);
+
+const pool = new Pool(poolOptions);
+>>>>>>> origin/codex/edit-project-for-railway-deployment-94ecb2
 
 pool.connect((err, client, release) => {
     if (err) {
