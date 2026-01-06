@@ -1,21 +1,16 @@
-const { Pool } = require('pg');
-require('dotenv').config();
+const mysql = require("mysql2/promise");
 
-const pool = new Pool({
-    user: process.env.DB_USER,
-    host: process.env.DB_HOST,
-    database: process.env.DB_NAME,
-    password: process.env.DB_PASSWORD,
-    port: process.env.DB_PORT,
-});
-
-pool.connect((err, client, release) => {
-    if (err) {
-        console.error('❌ Error al conectar con PostgreSQL:', err.stack);
-    } else {
-        console.log('✅ Conectado a PostgreSQL');
-        release();
-    }
+const pool = mysql.createPool({
+  host: process.env.DB_HOST,
+  port: Number(process.env.DB_PORT || 3306),
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0,
+  // opcional: si tu MySQL pide SSL (normalmente en Hostinger NO hace falta)
+  // ssl: { rejectUnauthorized: false },
 });
 
 module.exports = pool;
