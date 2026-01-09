@@ -1,9 +1,18 @@
 const multer = require("multer");
 const path = require("path");
+const fs = require("fs");
+
+// Carpeta de destino relativa a GammaApi (raíz del proyecto Node.js)
+const uploadsDir = path.join(__dirname, "../uploads/imagenes");
+
+// Crear carpeta si no existe
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, path.join(__dirname, "../../GammaVase/public/imgCata"));
+    cb(null, uploadsDir);
   },
   filename: function (req, file, cb) {
     const ext = path.extname(file.originalname); // extensión

@@ -20,7 +20,7 @@ router.post("/", upload.array("imagenes", 5), async (req, res) => {
   } = req.body;
 
   try {
-    const img_articulo = req.files.map((file) => `/imgCata/${file.filename}`);
+    const img_articulo = req.files.map((file) => `/uploads/imagenes/${file.filename}`);
     const sliderValue = slider === "true" || slider === true;
     const result = await pool.query(
       `INSERT INTO productos

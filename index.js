@@ -46,6 +46,10 @@ app.get('/api/health', async (_req, res) => {
   }
 });
 
+// Servir imágenes subidas (en GammaApi/uploads/imagenes)
+app.use('/uploads', express.static(path.join(__dirname, './uploads')));
+
+// Servir archivos estáticos del frontend (compatibilidad con rutas antiguas si existen)
 app.use('/imgCata', express.static(path.join(__dirname, '../GammaVase/public/imgCata')));
 app.use('/ideas', express.static(path.join(__dirname, '../GammaVase/public/ideas')));
 app.use('/familias', express.static(path.join(__dirname, '../GammaVase/public/assets/familias')));
