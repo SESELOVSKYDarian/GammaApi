@@ -45,7 +45,13 @@ app.use('/usuarios', require('./routes/usuariosRoutes'));
 app.get('/api/health', async (_req, res) => {
   try {
     await pool.query('SELECT 1');
-    res.json({ status: 'ok', db: 'connected' });
+    const uploadsExists = fs.existsSync(uploadsPath);
+    res.json({ 
+      status: 'ok', 
+      db: 'connected',
+      uploads: uploadsExists ? 'ok' : 'missing',
+      uploadsPath: uploadsPath
+    });
   } catch (err) {
     console.error('❌ Healthcheck DB error:', err);
     res.status(500).json({ status: 'error', db: 'unreachable', detail: err.message });
@@ -53,7 +59,9 @@ app.get('/api/health', async (_req, res) => {
 });
 
 // Servir imágenes subidas (en GammaApi/uploads/imagenes)
-app.use('/uploads', express.static(path.join(__dirname, './uploads')));
+const uploadsPath = path.resolve(__dirname, './uploads');
+console.log(`📁 Sirviendo uploads desde: ${uploadsPath}`);
+app.use('/uploads', express.static(uploadsPath));
 
 // Servir archivos estáticos del frontend (compatibilidad con rutas antiguas si existen)
 app.use('/imgCata', express.static(path.join(__dirname, '../GammaVase/public/imgCata')));

@@ -2,12 +2,16 @@ const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
 
-// Carpeta de destino relativa a GammaApi (raíz del proyecto Node.js)
-const uploadsDir = path.join(__dirname, "../uploads/imagenes");
+// Carpeta de destino: ruta absoluta desde la raíz del proyecto (GammaApi)
+// __dirname = /...../GammaApi/middlewares
+// Subimos un nivel: /...../GammaApi
+const projectRoot = path.resolve(__dirname, "..");
+const uploadsDir = path.join(projectRoot, "uploads", "imagenes");
 
 // Crear carpeta si no existe
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
+  console.log(`📁 Carpeta de uploads creada: ${uploadsDir}`);
 }
 
 const storage = multer.diskStorage({
