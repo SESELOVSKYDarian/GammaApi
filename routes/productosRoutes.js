@@ -181,7 +181,7 @@ router.put("/:id", upload.array("imagenes", 5), async (req, res) => {
 
   try {
     const img_articulo = req.files && req.files.length
-      ? req.files.map((file) => `/imgCata/${file.filename}`)
+      ? req.files.map((file) => `/uploads/imagenes/${file.filename}`)
       : null;
     const sliderValue = slider === "true" || slider === true;
     const baseFields = [
@@ -213,7 +213,7 @@ router.put("/:id", upload.array("imagenes", 5), async (req, res) => {
        WHERE productos.id = ?`,
       [id]
     );
-    res.json(updated.rows[0]);
+    res.json(normalizeProduct(updated.rows[0]));
   } catch (err) {
     console.error("❌ Error al actualizar producto:", err);
     res.status(500).json({ error: err.message });
@@ -309,7 +309,7 @@ router.patch("/:id/slider", async (req, res) => {
        WHERE productos.id = ?`,
       [id]
     );
-    res.json(result.rows[0]);
+    res.json(normalizeProduct(result.rows[0]));
   } catch (err) {
     console.error("❌ Error al actualizar slider:", err);
     res.status(500).json({ error: "Error al actualizar slider" });

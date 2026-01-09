@@ -2,10 +2,16 @@ require('dotenv').config(); // Debe ser la PRIMERA línea
 const express = require('express');
 const cors = require('cors');
 const fs = require('fs');
+const path = require('path');
 const pool = require('./db/db');
 const contactoRoute = require("./routes/contactoRoute");
-const path = require('path');
 const authRoutes = require('./routes/authRoutes');
+
+// 📁 Crear carpeta de uploads si no existe
+const uploadsDir = path.join(__dirname, './uploads/imagenes');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -74,18 +80,6 @@ if (fs.existsSync(frontendBuildPath)) {
 
 // ✅ Las rutas de productos están manejadas por productosRoutes
 // No duplicar aquí para evitar conflictos
-
-app.get('/api/productos/slug/:slug', async (req, res) => {
-  try {
-    const { slug } = req.params;
-    const result = await pool.query('SELECT * FROM productos WHERE url = ?', [slug]);
-    if (result.rows.length === 0) return res.status(404).json({ error: "Producto no encontrado" });
-    res.json(result.rows[0]);
-  } catch (err) {
-    console.error("❌ Error buscando por slug:", err);
-    res.status(500).json({ error: "Error interno" });
-  }
-});
 
 // 🔧 DEBUG: Log variables de entorno (sin exponer credenciales)
 console.log(`📍 DB_HOST: ${process.env.DB_HOST}`);
