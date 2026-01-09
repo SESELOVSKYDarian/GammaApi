@@ -68,45 +68,8 @@ if (fs.existsSync(frontendBuildPath)) {
 // ❗ OPCIONAL: si ya usás `/api/login` desde authRoutes.js, esta ruta extra de admin podrías dejarla o renombrarla:
 
 
-// ✅ Tus rutas personalizadas para productos (no se tocan)
-app.get('/api/productos', async (_, res) => {
-  try {
-    const result = await pool.query('SELECT * FROM productos');
-    res.json(result.rows);
-  } catch (error) {
-    console.error("❌ Get productos error:", error);
-    res.status(500).json({ success: false, message: "Failed to retrieve productos." });
-  }
-});
-
-app.post('/api/productos', async (req, res) => {
-  try {
-    const { nombre, marca, modelo, stock, etiquetas, precio } = req.body;
-    await pool.query('INSERT INTO producto(nombre, marca, modelo, stock, etiquetas, precio) VALUES(?, ?, ?, ?, ?, ?)',
-      [nombre, marca, modelo, stock, etiquetas, precio]);
-    res.json({ success: true });
-  } catch (error) {
-    console.error("❌ Post productos error:", error);
-    res.status(500).json({ success: false, message: "Failed to create producto." });
-  }
-});
-
-app.put('/api/productos/:id', async (req, res) => {
-  try {
-    const { nombre, marca, modelo, stock, etiquetas, precio } = req.body;
-    await pool.query('UPDATE productos SET nombre=?, marca=?, modelo=?, stock=?, etiquetas=?, precio=? WHERE id=?',
-      [nombre, marca, modelo, stock, etiquetas, precio, req.params.id]);
-    res.json({ success: true });
-  } catch (error) {
-    console.error("❌ Put productos error:", error);
-    res.status(500).json({ success: false, message: "Failed to update producto." });
-  }
-});
-
-app.delete('/api/productos/:id', async (req, res) => {
-  await pool.query('DELETE FROM productos WHERE id=?', [req.params.id]);
-  res.json({ success: true });
-});
+// ✅ Las rutas de productos están manejadas por productosRoutes
+// No duplicar aquí para evitar conflictos
 
 app.get('/api/productos/slug/:slug', async (req, res) => {
   try {
