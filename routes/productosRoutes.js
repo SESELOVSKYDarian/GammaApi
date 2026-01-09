@@ -3,8 +3,23 @@ const router = express.Router();
 const pool = require("../db/db");
 const upload = require("../middlewares/upload"); // importa multer
 
+// Helper: convertir rutas relativas a URLs absolutas usando el host del request
+const getAbsoluteUrl = (relativePath, req) => {
+  if (!relativePath) return relativePath;
+  
+  // Si ya es URL absoluta, retornar como está
+  if (relativePath.startsWith('http://') || relativePath.startsWith('https://')) {
+    return relativePath;
+  }
+  
+  // Construir URL absoluta
+  const protocol = req.protocol || 'https';
+  const host = req.get('host') || process.env.API_HOST || 'api.gammamodas.com.ar';
+  return `${protocol}://${host}${relativePath}`;
+};
+
 // Helper: normalizar producto para asegurar que img_articulo sea un array
-const normalizeProduct = (product) => {
+const normalizeProduct = (product, req) => {
   if (!product) return product;
   
   // Si img_articulo es string (JSON de MySQL), parsearlo a array
@@ -22,12 +37,17 @@ const normalizeProduct = (product) => {
     product.img_articulo = product.img_articulo ? [product.img_articulo] : [];
   }
   
+  // Convertir rutas relativas a URLs absolutas
+  if (req && product.img_articulo && Array.isArray(product.img_articulo)) {
+    product.img_articulo = product.img_articulo.map(img => getAbsoluteUrl(img, req));
+  }
+  
   return product;
 };
 
 // Helper: normalizar array de productos
-const normalizeProducts = (products) => {
-  return products.map(normalizeProduct);
+const normalizeProducts = (products, req) => {
+  return products.map(p => normalizeProduct(p, req));
 };
 
 // Agregar producto con imagen
@@ -77,7 +97,7 @@ router.post("/", upload.array("imagenes", 5), async (req, res) => {
       [result.insertId]
     );
 
-    res.json(normalizeProduct(created.rows[0] || {}));
+    res.json(normalizeProduct(created.rows[0] || {}, req));
   } catch (err) {
     console.error("❌ Error al guardar producto:", err);
     res.status(500).json({ error: err.message });
@@ -124,7 +144,7 @@ router.get("/", async (req, res) => {
   }
   try {
     const result = await pool.query(query, values);
-    res.json(normalizeProducts(result.rows));
+    res.json(normalizeProducts(result.rows, req));
   } catch (err) {
     console.error("❌ Error al obtener productos:", err);
     res.status(500).json({ error: "Error al obtener productos" });
@@ -213,7 +233,7 @@ router.put("/:id", upload.array("imagenes", 5), async (req, res) => {
        WHERE productos.id = ?`,
       [id]
     );
-    res.json(normalizeProduct(updated.rows[0]));
+    res.json(normalizeProduct(updated.rows[0], req));
   } catch (err) {
     console.error("❌ Error al actualizar producto:", err);
     res.status(500).json({ error: err.message });
@@ -249,7 +269,7 @@ router.get('/slug/:slug', async (req, res) => {
       return res.status(404).json({ error: "Producto no encontrado" });
     }
 
-    res.json(normalizeProduct(result.rows[0]));
+    res.json(normalizeProduct(result.rows[0], req));
   } catch (err) {
     console.error("❌ Error al obtener producto por slug:", err);
     res.status(500).json({ error: "Error interno del servidor" });
@@ -269,7 +289,7 @@ router.get("/familia/:familia_id", async (req, res) => {
       [familia_id]
     );
 
-    res.json(normalizeProducts(result.rows));
+    res.json(normalizeProducts(result.rows, req));
   } catch (err) {
     console.error("❌ Error al obtener productos por familia:", err);
     res.status(500).json({ error: "Error al obtener productos relacionados" });
@@ -285,7 +305,7 @@ router.get("/slider", async (_req, res) => {
          JOIN familias ON productos.familia_id = familias.id
          WHERE productos.slider = TRUE`
       );
-    res.json(normalizeProducts(result.rows));
+    res.json(normalizeProducts(result.rows, req));
   } catch (err) {
     console.error("❌ Error al obtener productos del slider:", err);
     res.status(500).json({ error: "Error al obtener productos del slider" });
@@ -309,7 +329,7 @@ router.patch("/:id/slider", async (req, res) => {
        WHERE productos.id = ?`,
       [id]
     );
-    res.json(normalizeProduct(result.rows[0]));
+    res.json(normalizeProduct(result.rows[0], req));
   } catch (err) {
     console.error("❌ Error al actualizar slider:", err);
     res.status(500).json({ error: "Error al actualizar slider" });
