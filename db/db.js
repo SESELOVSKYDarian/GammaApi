@@ -2,16 +2,6 @@
 require('dotenv').config();
 const mysql = require('mysql2/promise');
 
-<<<<<<< HEAD
-const rawHost = process.env.DB_HOST;
-const host = rawHost === 'localhost' ? '127.0.0.1' : rawHost;
-
-const pool = mysql.createPool({
-  host,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
-=======
 const getRequiredEnv = (key) => {
   const value = process.env[key]?.trim();
   if (!value) {
@@ -22,7 +12,7 @@ const getRequiredEnv = (key) => {
 
 const rawHost = getRequiredEnv('DB_HOST');
 const host =
-  rawHost === 'localhost' || rawHost === '::1' ? '127.0.0.1' : rawHost;
+  rawHost === 'localhost' || rawHost === '::1' ? '127.0.0.1' : rawHost || '127.0.0.1';
 const user = getRequiredEnv('DB_USER');
 const password = getRequiredEnv('DB_PASSWORD');
 const database = getRequiredEnv('DB_NAME');
@@ -32,7 +22,6 @@ const pool = mysql.createPool({
   user,
   password,
   database,
->>>>>>> origin/codex/configure-.htaccess-for-api-connection-2xxzd6
   port: process.env.DB_PORT ? Number(process.env.DB_PORT) : undefined,
   waitForConnections: true,
   connectionLimit: parseInt(process.env.DB_POOL_SIZE || '10', 10),
