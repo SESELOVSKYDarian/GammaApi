@@ -3,6 +3,33 @@ const router = express.Router();
 const pool = require("../db/db");
 const upload = require("../middlewares/upload"); // importa multer
 
+// Helper: normalizar producto para asegurar que img_articulo sea un array
+const normalizeProduct = (product) => {
+  if (!product) return product;
+  
+  // Si img_articulo es string (JSON de MySQL), parsearlo a array
+  if (typeof product.img_articulo === 'string') {
+    try {
+      product.img_articulo = JSON.parse(product.img_articulo);
+    } catch (e) {
+      // Si no es JSON válido, convertir a array de un elemento
+      product.img_articulo = [product.img_articulo];
+    }
+  }
+  
+  // Si no es array, convertirlo a array
+  if (!Array.isArray(product.img_articulo)) {
+    product.img_articulo = product.img_articulo ? [product.img_articulo] : [];
+  }
+  
+  return product;
+};
+
+// Helper: normalizar array de productos
+const normalizeProducts = (products) => {
+  return products.map(normalizeProduct);
+};
+
 // Agregar producto con imagen
 router.post("/", upload.array("imagenes", 5), async (req, res) => {
   const {
@@ -50,7 +77,7 @@ router.post("/", upload.array("imagenes", 5), async (req, res) => {
       [result.insertId]
     );
 
-    res.json(created.rows[0] || {});
+    res.json(normalizeProduct(created.rows[0] || {}));
   } catch (err) {
     console.error("❌ Error al guardar producto:", err);
     res.status(500).json({ error: err.message });
@@ -97,7 +124,7 @@ router.get("/", async (req, res) => {
   }
   try {
     const result = await pool.query(query, values);
-    res.json(result.rows);
+    res.json(normalizeProducts(result.rows));
   } catch (err) {
     console.error("❌ Error al obtener productos:", err);
     res.status(500).json({ error: "Error al obtener productos" });
@@ -222,7 +249,7 @@ router.get('/slug/:slug', async (req, res) => {
       return res.status(404).json({ error: "Producto no encontrado" });
     }
 
-    res.json(result.rows[0]);
+    res.json(normalizeProduct(result.rows[0]));
   } catch (err) {
     console.error("❌ Error al obtener producto por slug:", err);
     res.status(500).json({ error: "Error interno del servidor" });
@@ -242,7 +269,7 @@ router.get("/familia/:familia_id", async (req, res) => {
       [familia_id]
     );
 
-    res.json(result.rows);
+    res.json(normalizeProducts(result.rows));
   } catch (err) {
     console.error("❌ Error al obtener productos por familia:", err);
     res.status(500).json({ error: "Error al obtener productos relacionados" });
@@ -258,7 +285,7 @@ router.get("/slider", async (_req, res) => {
          JOIN familias ON productos.familia_id = familias.id
          WHERE productos.slider = TRUE`
       );
-    res.json(result.rows);
+    res.json(normalizeProducts(result.rows));
   } catch (err) {
     console.error("❌ Error al obtener productos del slider:", err);
     res.status(500).json({ error: "Error al obtener productos del slider" });
