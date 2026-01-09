@@ -1,7 +1,7 @@
+require('dotenv').config(); // Debe ser la PRIMERA línea
 const express = require('express');
 const cors = require('cors');
 const fs = require('fs');
-require('dotenv').config();
 const pool = require('./db/db');
 const contactoRoute = require("./routes/contactoRoute");
 const path = require('path');
@@ -81,6 +81,22 @@ app.get('/api/productos/slug/:slug', async (req, res) => {
     console.error("❌ Error buscando por slug:", err);
     res.status(500).json({ error: "Error interno" });
   }
+});
+
+// 🔧 DEBUG: Log variables de entorno (sin exponer credenciales)
+console.log(`📍 DB_HOST: ${process.env.DB_HOST}`);
+console.log(`📍 DB_PORT: ${process.env.DB_PORT}`);
+console.log(`📍 DB_NAME: ${process.env.DB_NAME}`);
+console.log(`📍 NODE_ENV: ${process.env.NODE_ENV || 'development'}`);
+
+// ❌ Middleware global para errores (DEBE ir antes de app.listen())
+app.use((err, req, res, next) => {
+  console.error('❌ Error global:', err);
+  res.status(500).json({ 
+    success: false, 
+    error: err.message || 'Error interno del servidor',
+    details: process.env.NODE_ENV === 'development' ? err.stack : undefined
+  });
 });
 
 app.listen(PORT, '0.0.0.0', () => {
