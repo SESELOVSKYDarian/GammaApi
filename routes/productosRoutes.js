@@ -47,6 +47,11 @@ const normalizeProduct = (product, req) => {
 
 // Helper: normalizar array de productos
 const normalizeProducts = (products, req) => {
+  // Validar que products es un array
+  if (!Array.isArray(products)) {
+    console.warn('⚠️ normalizeProducts recibió algo que no es array:', typeof products);
+    return [];
+  }
   return products.map(p => normalizeProduct(p, req));
 };
 
@@ -297,7 +302,7 @@ router.get("/familia/:familia_id", async (req, res) => {
 });
 
 // Productos marcados para el slider principal
-router.get("/slider", async (_req, res) => {
+router.get("/slider", async (req, res) => {
   try {
       const result = await pool.query(
         `SELECT productos.*, familias.gran_familia, familias.tipo_familia
