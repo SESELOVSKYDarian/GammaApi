@@ -23,7 +23,7 @@ const allowedOrigins = process.env.FRONTEND_URLS
 
 // ✅ 1. CORS va primero
 app.use(cors({
-  origin: allowedOrigins,
+  origin: true,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
