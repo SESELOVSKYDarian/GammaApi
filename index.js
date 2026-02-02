@@ -50,8 +50,8 @@ app.get('/api/health', async (_req, res) => {
   try {
     await pool.query('SELECT 1');
     const uploadsExists = fs.existsSync(uploadsPath);
-    res.json({ 
-      status: 'ok', 
+    res.json({
+      status: 'ok',
       db: 'connected',
       uploads: uploadsExists ? 'ok' : 'missing',
       uploadsPath: uploadsPath
@@ -111,13 +111,30 @@ console.log(`📍 NODE_ENV: ${process.env.NODE_ENV || 'development'}`);
 // ❌ Middleware global para errores (DEBE ir antes de app.listen())
 app.use((err, req, res, next) => {
   console.error('❌ Error global:', err);
-  res.status(500).json({ 
-    success: false, 
+  res.status(500).json({
+    success: false,
     error: err.message || 'Error interno del servidor',
     details: process.env.NODE_ENV === 'development' ? err.stack : undefined
   });
 });
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Servidor escuchando en http://localhost:${PORT}`);
-});
+// ✅ Función para iniciar el servidor después de verificar la DB
+const startServer = async () => {
+  try {
+    console.log('🔍 Verificando conexión a la base de datos...');
+    await pool.query('SELECT 1');
+    console.log('✅ Conexión a la base de datos exitosa.');
+
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`🚀 Servidor escuchando en http://localhost:${PORT}`);
+    });
+  } catch (err) {
+    console.error('❌ Error crítico al iniciar el servidor (DB unreachable):', err.message);
+    // En producción, a veces es mejor dejar que el proceso siga vivo para que el healthcheck devuelva el error real
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`⚠️ Servidor iniciado en modo degradado (DB Error): http://localhost:${PORT}`);
+    });
+  }
+};
+
+startServer();
