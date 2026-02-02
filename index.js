@@ -17,17 +17,38 @@ if (!fs.existsSync(uploadsDir)) {
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const allowedOrigins = process.env.FRONTEND_URLS
-  ? process.env.FRONTEND_URLS.split(',').map((url) => url.trim())
-  : ['http://localhost:5173', 'http://localhost:5175', 'https://gammamodas.com.ar', 'https://www.gammamodas.com.ar'];
+// ✅ 1. CORS y Logging
+// Logger simple para ver peticiones en los logs de Hostinger
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+  next();
+});
 
-// ✅ 1. CORS va primero
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:5175',
+  'https://gammamodas.com.ar',
+  'https://www.gammamodas.com.ar'
+];
+
 app.use(cors({
-  origin: true,
+  origin: function (origin, callback) {
+    // permitir peticiones sin origen (como curl o apps móviles)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) !== -1 || origin.includes('gammamodas.com.ar')) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+  optionsSuccessStatus: 200 // algunos navegadores antiguos (IE11, varios SmartTVs) fallan con 204
 }));
+
+// Habilitar pre-flight para todas las rutas
+app.options('*', cors());
 
 // ✅ 2. JSON también antes de las rutas
 app.use(express.json());
