@@ -7,13 +7,20 @@ const pool = require('./db/db');
 const contactoRoute = require("./routes/contactoRoute");
 const authRoutes = require('./routes/authRoutes');
 
-// 📁 Crear carpeta de uploads si no existe
+// 📁 Crear carpeta de uploads si no existe (con protección en caso de error de permisos)
 const uploadsDir = path.join(__dirname, './uploads/imagenes');
 const uploadsPath = path.resolve(__dirname, './uploads');
 
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
+try {
+  if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+  }
+} catch (err) {
+  console.warn('⚠️ No se pudo crear la carpeta de uploads:', err.message);
 }
+
+console.log('--- INICIANDO GAMMA API ---');
+console.log(`📍 NODE_ENV: ${process.env.NODE_ENV || 'development'}`);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -32,19 +39,11 @@ const allowedOrigins = [
 ];
 
 app.use(cors({
-  origin: function (origin, callback) {
-    // permitir peticiones sin origen (como curl o apps móviles)
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) !== -1 || origin.includes('gammamodas.com.ar')) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
+  origin: true, // Refleja el origen de la petición
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
-  optionsSuccessStatus: 200 // algunos navegadores antiguos (IE11, varios SmartTVs) fallan con 204
+  optionsSuccessStatus: 200
 }));
 
 // Habilitar pre-flight para todas las rutas
