@@ -9,6 +9,8 @@ const authRoutes = require('./routes/authRoutes');
 
 // 📁 Crear carpeta de uploads si no existe
 const uploadsDir = path.join(__dirname, './uploads/imagenes');
+const uploadsPath = path.resolve(__dirname, './uploads');
+
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
@@ -61,7 +63,6 @@ app.get('/api/health', async (_req, res) => {
 });
 
 // Servir imágenes subidas (en GammaApi/uploads/imagenes)
-const uploadsPath = path.resolve(__dirname, './uploads');
 console.log(`📁 Sirviendo uploads desde: ${uploadsPath}`);
 app.use('/uploads', express.static(uploadsPath));
 
