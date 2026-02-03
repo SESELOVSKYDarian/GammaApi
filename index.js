@@ -8,19 +8,35 @@ const contactoRoute = require("./routes/contactoRoute");
 const authRoutes = require('./routes/authRoutes');
 
 // 📁 Crear carpeta de uploads si no existe
-const uploadsDir = path.join(__dirname, './uploads/imagenes');
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
+const uploadsBaseDir = process.env.UPLOADS_DIR
+  ? path.resolve(process.env.UPLOADS_DIR)
+  : path.join(__dirname, './uploads');
+const uploadsDir = path.join(uploadsBaseDir, 'imagenes');
+try {
+  if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+  }
+} catch (error) {
+  console.warn('⚠️ No se pudo crear la carpeta de uploads:', error.message);
 }
 
 // Definir uploadsPath antes de usarlo en las rutas
-const uploadsPath = path.resolve(__dirname, './uploads');
+const uploadsPath = uploadsBaseDir;
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const allowedOrigins = process.env.FRONTEND_URLS
   ? process.env.FRONTEND_URLS.split(',').map((url) => url.trim())
   : ['http://localhost:5173', 'http://localhost:5175'];
+
+// Evitar que errores no manejados tumben el proceso en hosting compartido
+process.on('unhandledRejection', (reason) => {
+  console.error('❌ Unhandled Rejection:', reason);
+});
+
+process.on('uncaughtException', (error) => {
+  console.error('❌ Uncaught Exception:', error);
+});
 
 // ✅ 1. CORS va primero
 app.use(cors({

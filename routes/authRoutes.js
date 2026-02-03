@@ -6,13 +6,17 @@ const nodemailer = require('nodemailer');
 let adminCode = null;
 let adminCodeExp = null;
 
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
+const getEmailTransporter = () => {
+  const user = process.env.EMAIL_USER;
+  const pass = process.env.EMAIL_PASS;
+  if (!user || !pass) {
+    return null;
+  }
+  return nodemailer.createTransport({
+    service: 'gmail',
+    auth: { user, pass },
+  });
+};
 
 router.post('/login', async (req, res) => {
   const { id, contrasena } = req.body;
@@ -49,6 +53,12 @@ router.post('/admin/login', async (req, res) => {
   const code = Math.floor(100000 + Math.random() * 900000).toString();
   adminCode = code;
   adminCodeExp = Date.now() + 5 * 60 * 1000;
+  const transporter = getEmailTransporter();
+  if (!transporter) {
+    return res.status(500).json({
+      mensaje: 'Configuración de correo incompleta (EMAIL_USER/EMAIL_PASS).',
+    });
+  }
   try {
     await transporter.sendMail({
       from: process.env.EMAIL_USER,
