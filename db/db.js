@@ -17,6 +17,11 @@ const user = getRequiredEnv('DB_USER');
 const password = getRequiredEnv('DB_PASSWORD');
 const database = getRequiredEnv('DB_NAME');
 
+// 🔍 DIAGNÓSTICO HOSTINGER: Ver qué lee el código realmente
+console.warn(`[DB_LOG] Detectado User: "${user || '[VACÍO]'}"`);
+console.warn(`[DB_LOG] Detectado Host: "${host}"`);
+console.warn(`[DB_LOG] Detectado DB: "${database || '[VACÍO]'}"`);
+
 const pool = mysql.createPool({
   host,
   user,
