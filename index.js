@@ -7,14 +7,22 @@ const pool = require('./db/db');
 const contactoRoute = require("./routes/contactoRoute");
 const authRoutes = require('./routes/authRoutes');
 
-// 📁 Crear carpeta de uploads si no existe
-const uploadsDir = path.join(__dirname, './uploads/imagenes');
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-}
-
+// 📁 Configuración de RUTAS y CARPETAS (Definir todo antes de usarlo)
 const app = express();
 const PORT = process.env.PORT || 3000;
+const HOST = '0.0.0.0';
+const uploadsPath = path.resolve(__dirname, './uploads');
+const uploadsDir = path.join(uploadsPath, 'imagenes');
+
+// Crear carpeta de uploads de forma segura
+try {
+  if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+    console.log(`✅ Carpeta de uploads verificada: ${uploadsDir}`);
+  }
+} catch (fsErr) {
+  console.error('⚠️ Advertencia: No se pudo crear la carpeta de uploads:', fsErr.message);
+}
 const allowedOrigins = process.env.FRONTEND_URLS
   ? process.env.FRONTEND_URLS.split(',').map((url) => url.trim())
   : ['http://localhost:5173', 'http://localhost:5175'];
@@ -29,13 +37,14 @@ app.use(cors({
 app.use(express.json());
 
 // ✅ 3. Tus rutas
+app.get('/ping', (_req, res) => res.send('pong')); // Ruta simple para verificar que el proceso corre
+
 app.use('/api', authRoutes);
 app.use("/api/contacto", contactoRoute);
 app.use('/api/familias', require('./routes/familiasRoutes'));
 app.use('/api/usuarios', require('./routes/usuariosRoutes'));
 app.use('/api/productos', require('./routes/productosRoutes'));
 app.use('/api/precios', require('./routes/preciosRoutes'));
-app.use('/api/login', require('./routes/authRoutes'));
 app.use('/api/ideas', require('./routes/ideasRoutes'));
 
 // 🔀 Alias sin prefijo /api para compatibilidad con el frontend antiguo
@@ -44,22 +53,30 @@ app.use('/usuarios', require('./routes/usuariosRoutes'));
 // 🩺 Ruta de salud para validar que el servicio y la DB responden
 app.get('/api/health', async (_req, res) => {
   try {
+    // Verificar DB
     await pool.query('SELECT 1');
-    const uploadsExists = fs.existsSync(uploadsPath);
+
+    // Verificar Filesystem
+    const uploadsExists = fs.existsSync(uploadsDir);
+
     res.json({
       status: 'ok',
       db: 'connected',
       uploads: uploadsExists ? 'ok' : 'missing',
-      uploadsPath: uploadsPath
+      uploadsPath: uploadsPath,
+      timestamp: new Date().toISOString()
     });
   } catch (err) {
-    console.error('❌ Healthcheck DB error:', err);
-    res.status(500).json({ status: 'error', db: 'unreachable', detail: err.message });
+    console.error('❌ Healthcheck failure:', err);
+    res.status(500).json({
+      status: 'error',
+      db: 'unreachable',
+      detail: err.message
+    });
   }
 });
 
-// Servir imágenes subidas (en GammaApi/uploads/imagenes)
-const uploadsPath = path.resolve(__dirname, './uploads');
+// Servir imágenes subidas
 console.log(`📁 Sirviendo uploads desde: ${uploadsPath}`);
 app.use('/uploads', express.static(uploadsPath));
 
@@ -105,6 +122,7 @@ app.use((err, req, res, next) => {
   });
 });
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Servidor escuchando en http://localhost:${PORT}`);
+app.listen(PORT, HOST, () => {
+  console.log(`🚀 Servidor Gamma API escuchando en http://${HOST}:${PORT}`);
+  console.log(`🩺 Health check disponible en: http://${HOST}:${PORT}/api/health`);
 });
