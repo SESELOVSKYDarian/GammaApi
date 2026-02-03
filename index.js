@@ -7,10 +7,16 @@ const pool = require('./db/db');
 const contactoRoute = require("./routes/contactoRoute");
 const authRoutes = require('./routes/authRoutes');
 
-// 📁 Crear carpeta de uploads si no existe
+// 📁 Crear carpeta de uploads si no existe (Defensivo contra errores de permisos)
 const uploadsDir = path.join(__dirname, './uploads/imagenes');
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
+try {
+  if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+    console.log('✅ Carpeta de imágenes verificada.');
+  }
+} catch (err) {
+  console.error('⚠️ Error al crear carpetas (posible problema de permisos):', err.message);
+  // No lanzamos error para que la API siga intentando arrancar
 }
 
 const app = express();

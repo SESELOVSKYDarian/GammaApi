@@ -33,6 +33,14 @@ const pool = mysql.createPool({
   ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : undefined,
 });
 
+// 🛡️ Prevenir caídas por errores inesperados en el pool
+pool.on('error', (err) => {
+  console.error('❌ Error de Pool MySQL:', err.message);
+  if (err.code === 'PROTOCOL_CONNECTION_LOST') {
+    console.error('📡 La conexión con la DB se perdió. El pool intentará reconectar.');
+  }
+});
+
 const normalizeResult = (rows) => {
   if (Array.isArray(rows)) {
     return { rows, rowCount: rows.length };
