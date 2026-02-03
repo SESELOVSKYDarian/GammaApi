@@ -7,14 +7,18 @@ const pool = require('./db/db');
 const contactoRoute = require("./routes/contactoRoute");
 const authRoutes = require('./routes/authRoutes');
 
-// 📁 Crear carpeta de uploads si no existe
-const uploadsDir = path.join(__dirname, './uploads/imagenes');
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+// 📁 Definir rutas y carpetas antes de usarlas
+const uploadsPath = path.resolve(__dirname, './uploads');
+const uploadsDir = path.join(uploadsPath, 'imagenes');
+
+// Crear carpeta de uploads si no existe
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
-const app = express();
-const PORT = process.env.PORT || 3000;
 const allowedOrigins = process.env.FRONTEND_URLS
   ? process.env.FRONTEND_URLS.split(',').map((url) => url.trim())
   : ['http://localhost:5173', 'http://localhost:5175'];
@@ -28,14 +32,13 @@ app.use(cors({
 // ✅ 2. JSON también antes de las rutas
 app.use(express.json());
 
-// ✅ 3. Tus rutas
-app.use('/api', authRoutes);
+// ✅ 3. Tus rutas (Usar prefijo /api)
+app.use('/api/auth', authRoutes); // Renombrado a /api/auth para más claridad
 app.use("/api/contacto", contactoRoute);
 app.use('/api/familias', require('./routes/familiasRoutes'));
 app.use('/api/usuarios', require('./routes/usuariosRoutes'));
 app.use('/api/productos', require('./routes/productosRoutes'));
 app.use('/api/precios', require('./routes/preciosRoutes'));
-app.use('/api/login', require('./routes/authRoutes'));
 app.use('/api/ideas', require('./routes/ideasRoutes'));
 
 // 🔀 Alias sin prefijo /api para compatibilidad con el frontend antiguo
@@ -45,9 +48,9 @@ app.use('/usuarios', require('./routes/usuariosRoutes'));
 app.get('/api/health', async (_req, res) => {
   try {
     await pool.query('SELECT 1');
-    const uploadsExists = fs.existsSync(uploadsPath);
-    res.json({ 
-      status: 'ok', 
+    const uploadsExists = fs.existsSync(uploadsDir);
+    res.json({
+      status: 'ok',
       db: 'connected',
       uploads: uploadsExists ? 'ok' : 'missing',
       uploadsPath: uploadsPath
@@ -58,8 +61,7 @@ app.get('/api/health', async (_req, res) => {
   }
 });
 
-// Servir imágenes subidas (en GammaApi/uploads/imagenes)
-const uploadsPath = path.resolve(__dirname, './uploads');
+// Servir imágenes subidas
 console.log(`📁 Sirviendo uploads desde: ${uploadsPath}`);
 app.use('/uploads', express.static(uploadsPath));
 
@@ -98,8 +100,8 @@ console.log(`📍 NODE_ENV: ${process.env.NODE_ENV || 'development'}`);
 // ❌ Middleware global para errores (DEBE ir antes de app.listen())
 app.use((err, req, res, next) => {
   console.error('❌ Error global:', err);
-  res.status(500).json({ 
-    success: false, 
+  res.status(500).json({
+    success: false,
     error: err.message || 'Error interno del servidor',
     details: process.env.NODE_ENV === 'development' ? err.stack : undefined
   });
