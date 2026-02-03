@@ -90,7 +90,14 @@ app.get('/api/health', async (_req, res) => {
     });
   } catch (err) {
     console.error('❌ Healthcheck DB error:', err);
-    res.status(500).json({ status: 'error', db: 'unreachable', detail: err.message });
+    res.status(500).json({
+      status: 'error',
+      db: 'unreachable',
+      detail: err.message,
+      code: err.code,
+      errno: err.errno,
+      sqlState: err.sqlState
+    });
   }
 });
 

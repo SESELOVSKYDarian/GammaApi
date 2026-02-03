@@ -6,12 +6,12 @@ const upload = require("../middlewares/upload"); // importa multer
 // Helper: convertir rutas relativas a URLs absolutas usando el host del request
 const getAbsoluteUrl = (relativePath, req) => {
   if (!relativePath) return relativePath;
-  
+
   // Si ya es URL absoluta, retornar como está
   if (relativePath.startsWith('http://') || relativePath.startsWith('https://')) {
     return relativePath;
   }
-  
+
   // Construir URL absoluta
   const protocol = req.protocol || 'https';
   const host = req.get('host') || process.env.API_HOST || 'api.gammamodas.com.ar';
@@ -21,7 +21,7 @@ const getAbsoluteUrl = (relativePath, req) => {
 // Helper: normalizar producto para asegurar que img_articulo sea un array
 const normalizeProduct = (product, req) => {
   if (!product) return product;
-  
+
   // Si img_articulo es string (JSON de MySQL), parsearlo a array
   if (typeof product.img_articulo === 'string') {
     try {
@@ -31,17 +31,17 @@ const normalizeProduct = (product, req) => {
       product.img_articulo = [product.img_articulo];
     }
   }
-  
+
   // Si no es array, convertirlo a array
   if (!Array.isArray(product.img_articulo)) {
     product.img_articulo = product.img_articulo ? [product.img_articulo] : [];
   }
-  
+
   // Convertir rutas relativas a URLs absolutas
   if (req && product.img_articulo && Array.isArray(product.img_articulo)) {
     product.img_articulo = product.img_articulo.map(img => getAbsoluteUrl(img, req));
   }
-  
+
   return product;
 };
 
@@ -304,16 +304,20 @@ router.get("/familia/:familia_id", async (req, res) => {
 // Productos marcados para el slider principal
 router.get("/slider", async (req, res) => {
   try {
-      const result = await pool.query(
-        `SELECT productos.*, familias.gran_familia, familias.tipo_familia
+    const result = await pool.query(
+      `SELECT productos.*, familias.gran_familia, familias.tipo_familia
          FROM productos
          JOIN familias ON productos.familia_id = familias.id
          WHERE productos.slider = TRUE`
-      );
+    );
     res.json(normalizeProducts(result.rows, req));
   } catch (err) {
     console.error("❌ Error al obtener productos del slider:", err);
-    res.status(500).json({ error: "Error al obtener productos del slider" });
+    res.status(500).json({
+      error: "Error al obtener productos del slider",
+      detail: err.message,
+      stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+    });
   }
 });
 
