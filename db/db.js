@@ -5,9 +5,12 @@ const mysql = require('mysql2/promise');
 const getRequiredEnv = (key) => {
   const value = process.env[key]?.trim();
   if (!value) {
-    console.warn(`⚠️ Missing environment variable: ${key}`);
+    const errorMsg = `❌ CRITICAL: Missing environment variable: ${key}`;
+    console.error(errorMsg);
+    // No lanzamos error aquí para permitir que la app intente arrancar, 
+    // pero el pool fallará con info clara.
   }
-  return value;
+  return value || '';
 };
 
 const rawHost = getRequiredEnv('DB_HOST');
