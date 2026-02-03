@@ -313,11 +313,7 @@ router.get("/slider", async (req, res) => {
     res.json(normalizeProducts(result.rows, req));
   } catch (err) {
     console.error("❌ Error al obtener productos del slider:", err);
-    res.status(500).json({
-      error: "Error al obtener productos del slider",
-      detail: err.message,
-      stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
-    });
+    res.status(500).json({ error: "Error al obtener productos del slider" });
   }
 });
 

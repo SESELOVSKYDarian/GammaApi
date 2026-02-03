@@ -40,32 +40,16 @@ router.post('/login', async (req, res) => {
 
 router.post('/admin/login', async (req, res) => {
   const { admin, contrasena } = req.body;
-
-  // LOG de depuración para Hostinger
-  console.log(`🔐 Intento de login admin: [user: ${admin}]`);
-
-  const expectedUser = (process.env.ADMIN_USER || '').trim();
-  const expectedPass = (process.env.ADMIN_PASS || '').trim();
-  const receivedUser = (admin || '').trim();
-  const receivedPass = (contrasena || '').trim();
-
-  if (receivedUser !== expectedUser || receivedPass !== expectedPass) {
-    console.warn(`❌ Credenciales inválidas. Esperado: ${expectedUser[0]}... (${expectedUser.length}), Recibido: ${receivedUser[0]}... (${receivedUser.length})`);
-    return res.status(401).json({
-      mensaje: 'Credenciales inválidas',
-      debug: process.env.NODE_ENV === 'development' ? {
-        userMatch: receivedUser === expectedUser,
-        passMatch: receivedPass === expectedPass
-      } : undefined
-    });
+  if (
+    admin !== process.env.ADMIN_USER ||
+    contrasena !== process.env.ADMIN_PASS
+  ) {
+    return res.status(401).json({ mensaje: 'Credenciales inválidas' });
   }
-
   const code = Math.floor(100000 + Math.random() * 900000).toString();
   adminCode = code;
   adminCodeExp = Date.now() + 5 * 60 * 1000;
-
   try {
-    console.log(`📧 Enviando código de verificación a: ${process.env.ADMIN_EMAIL}`);
     await transporter.sendMail({
       from: process.env.EMAIL_USER,
       to: process.env.ADMIN_EMAIL,
@@ -74,7 +58,6 @@ router.post('/admin/login', async (req, res) => {
     });
     res.json({ mensaje: 'Código enviado' });
   } catch (err) {
-    console.error('❌ Error al enviar email de admin:', err);
     res.status(500).json({ mensaje: err.message });
   }
 });

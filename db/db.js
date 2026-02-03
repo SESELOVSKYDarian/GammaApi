@@ -17,9 +17,6 @@ const user = getRequiredEnv('DB_USER');
 const password = getRequiredEnv('DB_PASSWORD');
 const database = getRequiredEnv('DB_NAME');
 
-// Log informativo para Hostinger (sin contraseña)
-console.log(`🔌 Configurando pool para DB: ${user}@${host}:${process.env.DB_PORT || 3306}/${database}`);
-
 const pool = mysql.createPool({
   host,
   user,
