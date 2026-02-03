@@ -1,27 +1,32 @@
-// 🛢️ Lectura de variables (ya cargadas en index.js)
-const host = process.env.DB_HOST || '127.0.0.1';
-const user = process.env.DB_USER?.trim();
-const password = process.env.DB_PASSWORD?.trim();
-const database = process.env.DB_NAME?.trim();
+// db/db.js
+require('dotenv').config();
+const mysql = require('mysql2/promise');
 
-if (!user || !database) {
-  console.error('❌ ERROR DB: Credenciales faltantes en el entorno (user/db).');
-} else {
-  console.log(`📡 DB Config: user=${user}, host=${host}, db=${database}`);
-}
+const getRequiredEnv = (key) => {
+  const value = process.env[key]?.trim();
+  if (!value) {
+    console.warn(`⚠️ Missing environment variable: ${key}`);
+  }
+  return value;
+};
+
+const rawHost = getRequiredEnv('DB_HOST');
+const host =
+  rawHost === 'localhost' || rawHost === '::1' ? '127.0.0.1' : rawHost || '127.0.0.1';
+const user = getRequiredEnv('DB_USER');
+const password = getRequiredEnv('DB_PASSWORD');
+const database = getRequiredEnv('DB_NAME');
 
 const pool = mysql.createPool({
   host,
-  user: user || '',
-  password: password || '',
-  database: database || '',
-  port: process.env.DB_PORT ? Number(process.env.DB_PORT) : 3306,
+  user,
+  password,
+  database,
+  port: process.env.DB_PORT ? Number(process.env.DB_PORT) : undefined,
   waitForConnections: true,
   connectionLimit: parseInt(process.env.DB_POOL_SIZE || '10', 10),
   ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : undefined,
 });
-
-console.log(`🛢️ MySQL Pool creado para: host=${host}, user=${user || 'VACÍO'}`);
 
 const normalizeResult = (rows) => {
   if (Array.isArray(rows)) {

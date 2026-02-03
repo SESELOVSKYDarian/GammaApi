@@ -1,33 +1,16 @@
-const path = require('path');
-const fs = require('fs');
-const dotenv = require('dotenv');
-
-// 🔐 Carga de variables de entorno con ruta absoluta
-const envPath = path.resolve(__dirname, '.env');
-if (fs.existsSync(envPath)) {
-  dotenv.config({ path: envPath });
-  console.log('✅ Archivo .env cargado con éxito desde:', envPath);
-} else {
-  console.error('❌ ERROR CRÍTICO: No existe el archivo .env en:', envPath);
-  console.error('👉 Debes subirlo manualmente vía FTP o Administrador de Archivos de Hostinger.');
-}
-
+require('dotenv').config(); // Debe ser la PRIMERA línea
 const express = require('express');
 const cors = require('cors');
+const fs = require('fs');
+const path = require('path');
 const pool = require('./db/db');
 const contactoRoute = require("./routes/contactoRoute");
 const authRoutes = require('./routes/authRoutes');
 
-// 📁 Configuración de CARPETAS (Definir al inicio)
-const uploadsPath = path.resolve(__dirname, './uploads');
-const uploadsDir = path.join(uploadsPath, 'imagenes');
-
+// 📁 Crear carpeta de uploads si no existe
+const uploadsDir = path.join(__dirname, './uploads/imagenes');
 if (!fs.existsSync(uploadsDir)) {
-  try {
-    fs.mkdirSync(uploadsDir, { recursive: true });
-  } catch (err) {
-    console.error('⚠️ No se pudo crear la carpeta de uploads:', err.message);
-  }
+  fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
 const app = express();
@@ -75,7 +58,8 @@ app.get('/api/health', async (_req, res) => {
   }
 });
 
-// Servir imágenes subidas
+// Servir imágenes subidas (en GammaApi/uploads/imagenes)
+const uploadsPath = path.resolve(__dirname, './uploads');
 console.log(`📁 Sirviendo uploads desde: ${uploadsPath}`);
 app.use('/uploads', express.static(uploadsPath));
 
@@ -105,11 +89,11 @@ if (fs.existsSync(frontendBuildPath)) {
 // ✅ Las rutas de productos están manejadas por productosRoutes
 // No duplicar aquí para evitar conflictos
 
-// 🔧 DEBUG: Log variables de entorno (sin exponer contraseñas)
-console.log(`📍 DB_HOST detectado: ${process.env.DB_HOST || 'VACÍO'}`);
-console.log(`📍 DB_USER detectado: ${process.env.DB_USER || 'VACÍO'}`);
-console.log(`📍 DB_NAME detectado: ${process.env.DB_NAME || 'VACÍO'}`);
-console.log(`📍 PORT detectado: ${process.env.PORT || '3000 (default)'}`);
+// 🔧 DEBUG: Log variables de entorno (sin exponer credenciales)
+console.log(`📍 DB_HOST: ${process.env.DB_HOST}`);
+console.log(`📍 DB_PORT: ${process.env.DB_PORT}`);
+console.log(`📍 DB_NAME: ${process.env.DB_NAME}`);
+console.log(`📍 NODE_ENV: ${process.env.NODE_ENV || 'development'}`);
 
 // ❌ Middleware global para errores (DEBE ir antes de app.listen())
 app.use((err, req, res, next) => {
@@ -121,6 +105,6 @@ app.use((err, req, res, next) => {
   });
 });
 
-app.listen(PORT, '0.0.0.0', async () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Servidor escuchando en http://localhost:${PORT}`);
 });
