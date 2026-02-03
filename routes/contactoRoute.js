@@ -18,17 +18,26 @@ router.post("/", async (req, res) => {
     comentario,
   } = req.body;
 
+  const mailUser = process.env.MAIL_USER;
+  const mailPass = process.env.MAIL_PASS;
+  if (!mailUser || !mailPass) {
+    return res.status(500).json({
+      success: false,
+      message: "Configuración de correo incompleta (MAIL_USER/MAIL_PASS).",
+    });
+  }
+
   const transporter = nodemailer.createTransport({
     service: "gmail",
     auth: {
-      user: process.env.MAIL_USER,
-      pass: process.env.MAIL_PASS,
+      user: mailUser,
+      pass: mailPass,
     },
   });
 
   const mensajeAdmin = {
-    from: process.env.MAIL_USER,
-    to: process.env.MAIL_USER,
+    from: mailUser,
+    to: mailUser,
 
     subject: `Nuevo contacto de ${nombre}`,
     html: `
@@ -50,7 +59,7 @@ router.post("/", async (req, res) => {
   };
 
   const mensajeUsuario = {
-    from: process.env.MAIL_USER,
+    from: mailUser,
     to: email,
     subject: "Confirmación de contacto",
     html: `

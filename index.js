@@ -22,6 +22,15 @@ const allowedOrigins = process.env.FRONTEND_URLS
   ? process.env.FRONTEND_URLS.split(',').map((url) => url.trim())
   : ['http://localhost:5173', 'http://localhost:5175'];
 
+// Evitar que errores no manejados tumben el proceso en hosting compartido
+process.on('unhandledRejection', (reason) => {
+  console.error('❌ Unhandled Rejection:', reason);
+});
+
+process.on('uncaughtException', (error) => {
+  console.error('❌ Uncaught Exception:', error);
+});
+
 // ✅ 1. CORS va primero
 app.use(cors({
   origin: allowedOrigins,
