@@ -2,22 +2,15 @@
 require('dotenv').config();
 const mysql = require('mysql2/promise');
 
-const getRequiredEnv = (key) => {
-  const value = process.env[key]?.trim();
-  if (!value) {
-    const errorMsg = `❌ CRITICAL: Missing environment variable: ${key}`;
-    console.error(errorMsg);
-    // No lanzamos error aquí para permitir que la app intente arrancar, 
-    // pero el pool fallará con info clara.
-  }
-  return value || '';
-};
 
-const rawHost = getRequiredEnv('DB_HOST');
-const host = rawHost === 'localhost' || rawHost === '::1' ? '127.0.0.1' : (rawHost || '127.0.0.1');
-const user = getRequiredEnv('DB_USER');
-const password = getRequiredEnv('DB_PASSWORD');
-const database = getRequiredEnv('DB_NAME');
+const rawHost = process.env.DB_HOST?.trim();
+// Forzamos 127.0.0.1 si es local o si no está definido, siguiendo tu indicación
+const host = (rawHost === 'localhost' || rawHost === '::1' || !rawHost) ? '127.0.0.1' : rawHost;
+const user = process.env.DB_USER?.trim() || '';
+const password = process.env.DB_PASSWORD?.trim() || '';
+const database = process.env.DB_NAME?.trim() || '';
+
+console.log(`🛢️ Creando pool de conexiones: user=${user || 'MISSING'}, host=${host}, db=${database || 'MISSING'}`);
 
 const pool = mysql.createPool({
   host,

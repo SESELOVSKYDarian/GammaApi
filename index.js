@@ -1,8 +1,16 @@
-require('dotenv').config(); // Debe ser la PRIMERA línea
+const dotenv = require('dotenv');
+const path = require('path');
+const envResult = dotenv.config({ path: path.join(__dirname, '.env') });
+
+if (envResult.error) {
+  console.warn('⚠️ Advertencia: No se pudo cargar el archivo .env desde', path.join(__dirname, '.env'), ':', envResult.error.message);
+} else {
+  console.log('✅ Archivo .env cargado correctamente desde:', path.join(__dirname, '.env'));
+}
 const express = require('express');
 const cors = require('cors');
 const fs = require('fs');
-const path = require('path');
+// const path = require('path'); // Ya definido arriba
 const pool = require('./db/db');
 const contactoRoute = require("./routes/contactoRoute");
 const authRoutes = require('./routes/authRoutes');
@@ -52,27 +60,32 @@ app.use('/usuarios', require('./routes/usuariosRoutes'));
 
 // 🩺 Ruta de salud para validar que el servicio y la DB responden
 app.get('/api/health', async (_req, res) => {
+  const diagnostic = {
+    status: 'checking',
+    env: {
+      dotEnvLoaded: typeof envResult !== 'undefined' && !envResult.error,
+      missingKeys: ['DB_HOST', 'DB_USER', 'DB_PASSWORD', 'DB_NAME'].filter(k => !process.env[k])
+    },
+    timestamp: new Date().toISOString()
+  };
+
   try {
-    // Verificar DB
-    await pool.query('SELECT 1');
-
-    // Verificar Filesystem
-    const uploadsExists = fs.existsSync(uploadsDir);
-
-    res.json({
-      status: 'ok',
-      db: 'connected',
-      uploads: uploadsExists ? 'ok' : 'missing',
-      uploadsPath: uploadsPath,
-      timestamp: new Date().toISOString()
-    });
+    if (diagnostic.env.missingKeys.length === 0) {
+      await pool.query('SELECT 1');
+      diagnostic.db = 'connected';
+      diagnostic.status = 'ok';
+    } else {
+      diagnostic.db = 'skipped (missing config)';
+      diagnostic.status = 'configuration_error';
+    }
+    diagnostic.uploads = fs.existsSync(uploadsDir) ? 'ok' : 'missing';
+    res.json(diagnostic);
   } catch (err) {
     console.error('❌ Healthcheck failure:', err);
-    res.status(500).json({
-      status: 'error',
-      db: 'unreachable',
-      detail: err.message
-    });
+    diagnostic.status = 'db_error';
+    diagnostic.db = 'unreachable';
+    diagnostic.error = err.message;
+    res.status(500).json(diagnostic);
   }
 });
 
@@ -107,10 +120,11 @@ if (fs.existsSync(frontendBuildPath)) {
 // No duplicar aquí para evitar conflictos
 
 // 🔧 DEBUG: Log variables de entorno (sin exponer credenciales)
-console.log(`📍 DB_HOST: ${process.env.DB_HOST}`);
-console.log(`📍 DB_PORT: ${process.env.DB_PORT}`);
-console.log(`📍 DB_NAME: ${process.env.DB_NAME}`);
+console.log(`📍 DB_HOST: ${process.env.DB_HOST || 'No definido'}`);
+console.log(`📍 DB_USER: ${process.env.DB_USER ? 'Definido' : 'No definido'}`);
+console.log(`📍 DB_NAME: ${process.env.DB_NAME || 'No definido'}`);
 console.log(`📍 NODE_ENV: ${process.env.NODE_ENV || 'development'}`);
+console.log(`📍 PORT: ${process.env.PORT || '3000 (default)'}`);
 
 // ❌ Middleware global para errores (DEBE ir antes de app.listen())
 app.use((err, req, res, next) => {
