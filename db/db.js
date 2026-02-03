@@ -11,23 +11,21 @@ const getRequiredEnv = (key) => {
 };
 
 const rawHost = getRequiredEnv('DB_HOST');
+const host =
+  rawHost === 'localhost' || rawHost === '::1' ? '127.0.0.1' : rawHost || '127.0.0.1';
 const user = getRequiredEnv('DB_USER');
 const password = getRequiredEnv('DB_PASSWORD');
 const database = getRequiredEnv('DB_NAME');
 
-// En Hostinger shared hosting, a veces 127.0.0.1 no funciona y se requiere localhost
-// O viceversa. Mantenemos la lógica de normalización pero permitimos el valor crudo.
-const host =
-  rawHost === 'localhost' || rawHost === '::1' ? '127.0.0.1' : rawHost || '127.0.0.1';
-
-console.log(`🔌 Configurando pool de conexiones para DB: ${user}@${host}:${process.env.DB_PORT || 3306}/${database}`);
+// Log informativo para Hostinger (sin contraseña)
+console.log(`🔌 Configurando pool para DB: ${user}@${host}:${process.env.DB_PORT || 3306}/${database}`);
 
 const pool = mysql.createPool({
   host,
   user,
   password,
   database,
-  port: process.env.DB_PORT ? Number(process.env.DB_PORT) : 3306,
+  port: process.env.DB_PORT ? Number(process.env.DB_PORT) : undefined,
   waitForConnections: true,
   connectionLimit: parseInt(process.env.DB_POOL_SIZE || '10', 10),
   ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : undefined,

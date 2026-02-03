@@ -1,13 +1,5 @@
 require('dotenv').config(); // Debe ser la PRIMERA línea
 
-// 🚨 Manejo global de errores para DEBUG en Hostinger
-process.on('uncaughtException', (err) => {
-  console.error('🔥 EXCEPCIÓN NO CAPTURADA:', err);
-});
-process.on('unhandledRejection', (reason, promise) => {
-  console.error('🔥 PROMESA NO CAPTURADA EN:', promise, 'razón:', reason);
-});
-
 const express = require('express');
 const cors = require('cors');
 const fs = require('fs');
@@ -16,55 +8,42 @@ const pool = require('./db/db');
 const contactoRoute = require("./routes/contactoRoute");
 const authRoutes = require('./routes/authRoutes');
 
-// 📁 Crear carpeta de uploads si no existe (con protección en caso de error de permisos)
-const uploadsDir = path.join(__dirname, './uploads/imagenes');
+// 📁 Carpeta de uploads (se define primero para usarse abajo)
 const uploadsPath = path.resolve(__dirname, './uploads');
+const uploadsDir = path.join(uploadsPath, 'imagenes');
 
-try {
-  if (!fs.existsSync(uploadsDir)) {
+if (!fs.existsSync(uploadsDir)) {
+  try {
     fs.mkdirSync(uploadsDir, { recursive: true });
+    console.log('📁 Carpeta de uploads creada correctamente');
+  } catch (err) {
+    console.warn('⚠️ No se pudo crear la carpeta de uploads:', err.message);
   }
-} catch (err) {
-  console.warn('⚠️ No se pudo crear la carpeta de uploads:', err.message);
 }
 
-console.log('--- INICIANDO GAMMA API ---');
-console.log(`📍 NODE_ENV: ${process.env.NODE_ENV || 'development'}`);
-
 const app = express();
-
-// 🚀 RUTA DE PRUEBA (Para descartar problemas de middleware o rutas)
-app.get('/api/ping', (req, res) => res.send('pong'));
 const PORT = process.env.PORT || 3000;
-// ✅ 1. CORS y Logging
-// Logger simple para ver peticiones en los logs de Hostinger
+
+// ✅ 1. CORS dinámico según env o localhost
+const allowedOrigins = process.env.FRONTEND_URLS
+  ? process.env.FRONTEND_URLS.split(',').map((url) => url.trim())
+  : ['http://localhost:5173', 'http://localhost:5175'];
+
+app.use(cors({
+  origin: allowedOrigins,
+  credentials: true,
+}));
+
+// ✅ 2. JSON Parser
+app.use(express.json());
+
+// Logging simple para Hostinger
 app.use((req, res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
   next();
 });
 
-const allowedOrigins = [
-  'http://localhost:5173',
-  'http://localhost:5175',
-  'https://gammamodas.com.ar',
-  'https://www.gammamodas.com.ar'
-];
-
-app.use(cors({
-  origin: true, // Refleja el origen de la petición
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
-  optionsSuccessStatus: 200
-}));
-
-// Habilitar pre-flight para todas las rutas
-app.options('*', cors());
-
-// ✅ 2. JSON también antes de las rutas
-app.use(express.json());
-
-// ✅ 3. Tus rutas
+// ✅ 3. Rutas de la API
 app.use('/api', authRoutes);
 app.use("/api/contacto", contactoRoute);
 app.use('/api/familias', require('./routes/familiasRoutes'));
@@ -74,19 +53,20 @@ app.use('/api/precios', require('./routes/preciosRoutes'));
 app.use('/api/login', require('./routes/authRoutes'));
 app.use('/api/ideas', require('./routes/ideasRoutes'));
 
-// 🔀 Alias sin prefijo /api para compatibilidad con el frontend antiguo
+// 🔀 Alias sin prefijo /api para compatibilidad
 app.use('/usuarios', require('./routes/usuariosRoutes'));
 
-// 🩺 Ruta de salud para validar que el servicio y la DB responden
+// 🩺 Healthcheck mejorado para diagnóstico de DB
 app.get('/api/health', async (_req, res) => {
   try {
+    console.log('🔍 Healthcheck: Verificando DB...');
     await pool.query('SELECT 1');
-    const uploadsExists = fs.existsSync(uploadsPath);
     res.json({
       status: 'ok',
       db: 'connected',
-      uploads: uploadsExists ? 'ok' : 'missing',
-      uploadsPath: uploadsPath
+      node_env: process.env.NODE_ENV,
+      port: PORT,
+      uploads: fs.existsSync(uploadsPath) ? 'ok' : 'missing'
     });
   } catch (err) {
     console.error('❌ Healthcheck DB error:', err);
@@ -94,31 +74,26 @@ app.get('/api/health', async (_req, res) => {
       status: 'error',
       db: 'unreachable',
       detail: err.message,
-      code: err.code,
-      errno: err.errno,
-      sqlState: err.sqlState
+      code: err.code
     });
   }
 });
 
-// Servir imágenes subidas (en GammaApi/uploads/imagenes)
-console.log(`📁 Sirviendo uploads desde: ${uploadsPath}`);
+// Servir imágenes subidas
 app.use('/uploads', express.static(uploadsPath));
 
-// Servir archivos estáticos del frontend (compatibilidad con rutas antiguas si existen)
-const imgCataPath = path.join(__dirname, '../GammaVase/public/imgCata');
-const ideasPath = path.join(__dirname, '../GammaVase/public/ideas');
-const familiasPath = path.join(__dirname, '../GammaVase/public/assets/familias');
+// Servir archivos estáticos del frontend si existen
+const publicPaths = {
+  '/imgCata': path.join(__dirname, '../GammaVase/public/imgCata'),
+  '/ideas': path.join(__dirname, '../GammaVase/public/ideas'),
+  '/familias': path.join(__dirname, '../GammaVase/public/assets/familias')
+};
 
-if (fs.existsSync(imgCataPath)) {
-  app.use('/imgCata', express.static(imgCataPath));
-}
-if (fs.existsSync(ideasPath)) {
-  app.use('/ideas', express.static(ideasPath));
-}
-if (fs.existsSync(familiasPath)) {
-  app.use('/familias', express.static(familiasPath));
-}
+Object.entries(publicPaths).forEach(([route, localPath]) => {
+  if (fs.existsSync(localPath)) {
+    app.use(route, express.static(localPath));
+  }
+});
 
 // Serve frontend build when available
 const frontendBuildPath = path.join(__dirname, '../GammaVase/dist');
@@ -129,25 +104,17 @@ if (fs.existsSync(frontendBuildPath)) {
     return res.sendFile(path.join(frontendBuildPath, 'index.html'));
   });
 } else {
-  // Respuesta simple para evitar "Cannot GET /" cuando no hay build estático
   app.get('/', (_req, res) => {
     res.json({ status: 'ok', message: 'Gamma API en ejecución' });
   });
 }
 
-// ❗ OPCIONAL: si ya usás `/api/login` desde authRoutes.js, esta ruta extra de admin podrías dejarla o renombrarla:
-
-
-// ✅ Las rutas de productos están manejadas por productosRoutes
-// No duplicar aquí para evitar conflictos
-
-// 🔧 DEBUG: Log variables de entorno (sin exponer credenciales)
+// 🔧 Logging de variables (sin passwords)
 console.log(`📍 DB_HOST: ${process.env.DB_HOST}`);
 console.log(`📍 DB_PORT: ${process.env.DB_PORT}`);
 console.log(`📍 DB_NAME: ${process.env.DB_NAME}`);
-console.log(`📍 NODE_ENV: ${process.env.NODE_ENV || 'development'}`);
 
-// ❌ Middleware global para errores (DEBE ir antes de app.listen())
+// ❌ Middleware global para errores (Retorna JSON)
 app.use((err, req, res, next) => {
   console.error('❌ Error global:', err);
   res.status(500).json({
@@ -157,23 +124,6 @@ app.use((err, req, res, next) => {
   });
 });
 
-// ✅ Función para iniciar el servidor después de verificar la DB
-const startServer = async () => {
-  try {
-    console.log('🔍 Verificando conexión a la base de datos...');
-    await pool.query('SELECT 1');
-    console.log('✅ Conexión a la base de datos exitosa.');
-
-    app.listen(PORT, '0.0.0.0', () => {
-      console.log(`🚀 Servidor escuchando en http://localhost:${PORT}`);
-    });
-  } catch (err) {
-    console.error('❌ Error crítico al iniciar el servidor (DB unreachable):', err.message);
-    // En producción, a veces es mejor dejar que el proceso siga vivo para que el healthcheck devuelva el error real
-    app.listen(PORT, '0.0.0.0', () => {
-      console.log(`⚠️ Servidor iniciado en modo degradado (DB Error): http://localhost:${PORT}`);
-    });
-  }
-};
-
-startServer();
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 Servidor ejecutándose en puerto ${PORT}`);
+});
