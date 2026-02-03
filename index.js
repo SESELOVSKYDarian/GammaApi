@@ -24,15 +24,15 @@ if (!fs.existsSync(uploadsDir)) {
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// ✅ 1. CORS dinámico según env o localhost
-const allowedOrigins = process.env.FRONTEND_URLS
-  ? process.env.FRONTEND_URLS.split(',').map((url) => url.trim())
-  : ['http://localhost:5173', 'http://localhost:5175'];
-
+// ✅ 1. CORS - Usamos origin: true para depuración profunda (refleja el origen de la petición)
 app.use(cors({
-  origin: allowedOrigins,
+  origin: true,
   credentials: true,
 }));
+
+// Log de variables de entorno críticas para depuración (seguro)
+console.log(`🔑 ADMIN_USER configurado: ${process.env.ADMIN_USER ? process.env.ADMIN_USER[0] + '*** (largo: ' + process.env.ADMIN_USER.length + ')' : 'NO DEFINIDO'}`);
+console.log(`🔑 ADMIN_PASS configurado: ${process.env.ADMIN_PASS ? '*** (largo: ' + process.env.ADMIN_PASS.length + ')' : 'NO DEFINIDO'}`);
 
 // ✅ 2. JSON Parser
 app.use(express.json());
