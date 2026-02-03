@@ -59,7 +59,7 @@ router.post("/", async (req, res) => {
     `,
   };
 
-    try {
+  try {
     await transporter.sendMail(mensajeAdmin);
     await transporter.sendMail(mensajeUsuario);
     console.log("✅ Emails sent successfully!");
