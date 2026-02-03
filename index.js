@@ -9,6 +9,7 @@ const authRoutes = require('./routes/authRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const HOST = '0.0.0.0';
 
 // 📁 Definir rutas y carpetas antes de usarlas
 const uploadsPath = path.resolve(__dirname, './uploads');
@@ -107,6 +108,6 @@ app.use((err, req, res, next) => {
   });
 });
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Servidor escuchando en http://localhost:${PORT}`);
+app.listen(PORT, HOST, () => {
+  console.log(`🚀 Servidor escuchando en http://${HOST}:${PORT}`);
 });
