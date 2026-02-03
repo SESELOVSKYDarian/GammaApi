@@ -2,32 +2,30 @@
 require('dotenv').config();
 const mysql = require('mysql2/promise');
 
+const getRequiredEnv = (key) => {
+  const value = process.env[key]?.trim();
+  if (!value) {
+    console.warn(`⚠️ Missing environment variable: ${key}`);
+  }
+  return value;
+};
 
-const rawHost = process.env.DB_HOST?.trim();
-// Forzamos 127.0.0.1 si es local o si no está definido, siguiendo tu indicación
-const host = (rawHost === 'localhost' || rawHost === '::1' || !rawHost) ? '127.0.0.1' : rawHost;
-const user = process.env.DB_USER?.trim() || '';
-const password = process.env.DB_PASSWORD?.trim() || '';
-const database = process.env.DB_NAME?.trim() || '';
-
-console.log(`🛢️ Creando pool de conexiones: user=${user || 'MISSING'}, host=${host}, db=${database || 'MISSING'}`);
+const rawHost = getRequiredEnv('DB_HOST');
+const host =
+  rawHost === 'localhost' || rawHost === '::1' ? '127.0.0.1' : rawHost || '127.0.0.1';
+const user = getRequiredEnv('DB_USER');
+const password = getRequiredEnv('DB_PASSWORD');
+const database = getRequiredEnv('DB_NAME');
 
 const pool = mysql.createPool({
   host,
   user,
   password,
   database,
-  port: process.env.DB_PORT ? Number(process.env.DB_PORT) : 3306,
+  port: process.env.DB_PORT ? Number(process.env.DB_PORT) : undefined,
   waitForConnections: true,
   connectionLimit: parseInt(process.env.DB_POOL_SIZE || '10', 10),
   ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : undefined,
-});
-
-// Logs para diagnosticar en producción (sin mostrar contraseña completa)
-console.log(`🛢️ Intentando conectar a DB: ${user}@${host}:${process.env.DB_PORT || 3306}/${database}`);
-
-pool.on('error', (err) => {
-  console.error('❌ Error inesperado en el pool de MySQL:', err);
 });
 
 const normalizeResult = (rows) => {
