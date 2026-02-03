@@ -1,4 +1,13 @@
 require('dotenv').config(); // Debe ser la PRIMERA línea
+
+// 🚨 Manejo global de errores para DEBUG en Hostinger
+process.on('uncaughtException', (err) => {
+  console.error('🔥 EXCEPCIÓN NO CAPTURADA:', err);
+});
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('🔥 PROMESA NO CAPTURADA EN:', promise, 'razón:', reason);
+});
+
 const express = require('express');
 const cors = require('cors');
 const fs = require('fs');
@@ -23,6 +32,9 @@ console.log('--- INICIANDO GAMMA API ---');
 console.log(`📍 NODE_ENV: ${process.env.NODE_ENV || 'development'}`);
 
 const app = express();
+
+// 🚀 RUTA DE PRUEBA (Para descartar problemas de middleware o rutas)
+app.get('/api/ping', (req, res) => res.send('pong'));
 const PORT = process.env.PORT || 3000;
 // ✅ 1. CORS y Logging
 // Logger simple para ver peticiones en los logs de Hostinger
