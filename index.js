@@ -8,35 +8,16 @@ const contactoRoute = require("./routes/contactoRoute");
 const authRoutes = require('./routes/authRoutes');
 
 // 📁 Crear carpeta de uploads si no existe
-const uploadsBaseDir = process.env.UPLOADS_DIR
-  ? path.resolve(process.env.UPLOADS_DIR)
-  : path.join(__dirname, './uploads');
-const uploadsDir = path.join(uploadsBaseDir, 'imagenes');
-try {
-  if (!fs.existsSync(uploadsDir)) {
-    fs.mkdirSync(uploadsDir, { recursive: true });
-  }
-} catch (error) {
-  console.warn('⚠️ No se pudo crear la carpeta de uploads:', error.message);
+const uploadsDir = path.join(__dirname, './uploads/imagenes');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
 }
-
-// Definir uploadsPath antes de usarlo en las rutas
-const uploadsPath = uploadsBaseDir;
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const allowedOrigins = process.env.FRONTEND_URLS
   ? process.env.FRONTEND_URLS.split(',').map((url) => url.trim())
   : ['http://localhost:5173', 'http://localhost:5175'];
-
-// Evitar que errores no manejados tumben el proceso en hosting compartido
-process.on('unhandledRejection', (reason) => {
-  console.error('❌ Unhandled Rejection:', reason);
-});
-
-process.on('uncaughtException', (error) => {
-  console.error('❌ Uncaught Exception:', error);
-});
 
 // ✅ 1. CORS va primero
 app.use(cors({
@@ -65,8 +46,8 @@ app.get('/api/health', async (_req, res) => {
   try {
     await pool.query('SELECT 1');
     const uploadsExists = fs.existsSync(uploadsPath);
-    res.json({
-      status: 'ok',
+    res.json({ 
+      status: 'ok', 
       db: 'connected',
       uploads: uploadsExists ? 'ok' : 'missing',
       uploadsPath: uploadsPath
@@ -78,6 +59,7 @@ app.get('/api/health', async (_req, res) => {
 });
 
 // Servir imágenes subidas (en GammaApi/uploads/imagenes)
+const uploadsPath = path.resolve(__dirname, './uploads');
 console.log(`📁 Sirviendo uploads desde: ${uploadsPath}`);
 app.use('/uploads', express.static(uploadsPath));
 
@@ -101,6 +83,12 @@ if (fs.existsSync(frontendBuildPath)) {
   });
 }
 
+// ❗ OPCIONAL: si ya usás `/api/login` desde authRoutes.js, esta ruta extra de admin podrías dejarla o renombrarla:
+
+
+// ✅ Las rutas de productos están manejadas por productosRoutes
+// No duplicar aquí para evitar conflictos
+
 // 🔧 DEBUG: Log variables de entorno (sin exponer credenciales)
 console.log(`📍 DB_HOST: ${process.env.DB_HOST}`);
 console.log(`📍 DB_PORT: ${process.env.DB_PORT}`);
@@ -110,8 +98,8 @@ console.log(`📍 NODE_ENV: ${process.env.NODE_ENV || 'development'}`);
 // ❌ Middleware global para errores (DEBE ir antes de app.listen())
 app.use((err, req, res, next) => {
   console.error('❌ Error global:', err);
-  res.status(500).json({
-    success: false,
+  res.status(500).json({ 
+    success: false, 
     error: err.message || 'Error interno del servidor',
     details: process.env.NODE_ENV === 'development' ? err.stack : undefined
   });

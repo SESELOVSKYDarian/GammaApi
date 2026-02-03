@@ -1,43 +1,21 @@
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
-const os = require("os");
 
 // Carpeta de destino: ruta absoluta desde la raíz del proyecto (GammaApi)
 // __dirname = /...../GammaApi/middlewares
 // Subimos un nivel: /...../GammaApi
 const projectRoot = path.resolve(__dirname, "..");
-const defaultUploadsDir = path.join(projectRoot, "uploads", "imagenes");
-const envUploadsDir = process.env.UPLOADS_DIR
-  ? path.join(path.resolve(process.env.UPLOADS_DIR), "imagenes")
-  : null;
+const uploadsDir = path.join(projectRoot, "uploads", "imagenes");
 
-const ensureUploadsDir = (dir) => {
-  if (!dir) {
-    return null;
-  }
-  try {
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-      console.log(`📁 Carpeta de uploads creada: ${dir}`);
-    }
-    return dir;
-  } catch (error) {
-    console.warn(`⚠️ No se pudo crear la carpeta de uploads (${dir}):`, error.message);
-    return null;
-  }
-};
-
-const uploadsDir =
-  ensureUploadsDir(envUploadsDir) ||
-  ensureUploadsDir(defaultUploadsDir) ||
-  ensureUploadsDir(path.join(os.tmpdir(), "gamma-uploads"));
+// Crear carpeta si no existe
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+  console.log(`📁 Carpeta de uploads creada: ${uploadsDir}`);
+}
 
 const storage = multer.diskStorage({
-  destination: function (_req, _file, cb) {
-    if (!uploadsDir) {
-      return cb(new Error("Directorio de uploads no disponible."));
-    }
+  destination: function (req, file, cb) {
     cb(null, uploadsDir);
   },
   filename: function (req, file, cb) {
