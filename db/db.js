@@ -11,8 +11,7 @@ const getRequiredEnv = (key) => {
 };
 
 const rawHost = getRequiredEnv('DB_HOST');
-const host =
-  rawHost === 'localhost' || rawHost === '::1' ? '127.0.0.1' : rawHost || '127.0.0.1';
+const host = rawHost === 'localhost' || rawHost === '::1' ? '127.0.0.1' : (rawHost || '127.0.0.1');
 const user = getRequiredEnv('DB_USER');
 const password = getRequiredEnv('DB_PASSWORD');
 const database = getRequiredEnv('DB_NAME');
@@ -22,10 +21,17 @@ const pool = mysql.createPool({
   user,
   password,
   database,
-  port: process.env.DB_PORT ? Number(process.env.DB_PORT) : undefined,
+  port: process.env.DB_PORT ? Number(process.env.DB_PORT) : 3306,
   waitForConnections: true,
   connectionLimit: parseInt(process.env.DB_POOL_SIZE || '10', 10),
   ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : undefined,
+});
+
+// Logs para diagnosticar en producción (sin mostrar contraseña completa)
+console.log(`🛢️ Intentando conectar a DB: ${user}@${host}:${process.env.DB_PORT || 3306}/${database}`);
+
+pool.on('error', (err) => {
+  console.error('❌ Error inesperado en el pool de MySQL:', err);
 });
 
 const normalizeResult = (rows) => {
