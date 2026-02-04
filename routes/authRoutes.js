@@ -36,8 +36,8 @@ router.post('/login', async (req, res) => {
 router.post('/admin/login', async (req, res) => {
   const { admin, contrasena } = req.body;
 
-  const validUser = process.env.ADMIN_USER || 'admingamma';
-  const validPass = process.env.ADMIN_PASS || 'gORVF48s7sTxd1G0*$!#';
+  const validUser = process.env.ADMIN_USER;
+  const validPass = process.env.ADMIN_PASS;
 
   if (admin !== validUser || contrasena !== validPass) {
     return res.status(401).json({ mensaje: 'Credenciales inválidas' });
@@ -49,14 +49,14 @@ router.post('/admin/login', async (req, res) => {
     const transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
-        user: process.env.EMAIL_USER || 'dariseses@gmail.com',
-        pass: process.env.EMAIL_PASS || 'iaezrlmghyqlepuc',
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
       },
     });
 
     await transporter.sendMail({
-      from: process.env.EMAIL_USER || 'dariseses@gmail.com',
-      to: process.env.ADMIN_EMAIL || 'dariseses@gmail.com',
+      from: process.env.EMAIL_USER,
+      to: process.env.ADMIN_EMAIL,
       subject: 'Código de verificación',
       text: `Tu código de verificación es: ${code}`,
     });
