@@ -41,8 +41,8 @@ router.post('/login', async (req, res) => {
 router.post('/admin/login', async (req, res) => {
   const { admin, contrasena } = req.body;
 
-  const validUser = process.env.ADMIN_USER || 'admin';
-  const validPass = process.env.ADMIN_PASS || '1234';
+  const validUser = process.env.ADMIN_USER || 'admingamma';
+  const validPass = process.env.ADMIN_PASS || 'gORVF48s7sTxd1G0*$!#';
 
   if (admin !== validUser || contrasena !== validPass) {
     return res.status(401).json({ mensaje: 'Credenciales inválidas' });
