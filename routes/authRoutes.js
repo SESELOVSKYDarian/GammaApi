@@ -6,7 +6,8 @@ const nodemailer = require('nodemailer');
 let adminCode = null;
 let adminCodeExp = null;
 
-// Transporter initialization moved to route to prevent startup crash if env vars are missing
+// Removed top-level transporter to prevent startup crash
+// Initialization moved to the route
 
 router.post('/login', async (req, res) => {
   const { id, contrasena } = req.body;
@@ -35,10 +36,10 @@ router.post('/login', async (req, res) => {
 router.post('/admin/login', async (req, res) => {
   const { admin, contrasena } = req.body;
 
-  if (
-    admin !== process.env.ADMIN_USER ||
-    contrasena !== process.env.ADMIN_PASS
-  ) {
+  const validUser = process.env.ADMIN_USER || 'admingamma';
+  const validPass = process.env.ADMIN_PASS || 'gORVF48s7sTxd1G0*$!#';
+
+  if (admin !== validUser || contrasena !== validPass) {
     return res.status(401).json({ mensaje: 'Credenciales inválidas' });
   }
   const code = Math.floor(100000 + Math.random() * 900000).toString();
@@ -48,14 +49,14 @@ router.post('/admin/login', async (req, res) => {
     const transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
+        user: process.env.EMAIL_USER || 'dariseses@gmail.com',
+        pass: process.env.EMAIL_PASS || 'iaezrlmghyqlepuc',
       },
     });
 
     await transporter.sendMail({
-      from: process.env.EMAIL_USER,
-      to: process.env.ADMIN_EMAIL,
+      from: process.env.EMAIL_USER || 'dariseses@gmail.com',
+      to: process.env.ADMIN_EMAIL || 'dariseses@gmail.com',
       subject: 'Código de verificación',
       text: `Tu código de verificación es: ${code}`,
     });

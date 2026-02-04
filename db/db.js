@@ -10,12 +10,12 @@ const getRequiredEnv = (key) => {
   return value;
 };
 
-const rawHost = process.env.DB_HOST;
+const rawHost = process.env.DB_HOST || 'localhost';
 const host =
-  rawHost === 'localhost' || rawHost === '::1' ? '127.0.0.1' : rawHost;
-const user = process.env.DB_USER;
-const password = process.env.DB_PASSWORD;
-const database = process.env.DB_NAME;
+  rawHost === 'localhost' || rawHost === '::1' ? '127.0.0.1' : rawHost || '127.0.0.1';
+const user = process.env.DB_USER || 'u938651760_gamma';
+const password = process.env.DB_PASSWORD || '>5hX!*6D;HPh';
+const database = process.env.DB_NAME || 'u938651760_gamma';
 
 // 🔍 DIAGNÓSTICO HOSTINGER: Ver qué lee el código realmente
 console.warn(`[DB_LOG] Detectado User: "${user || '[VACÍO]'}"`);
