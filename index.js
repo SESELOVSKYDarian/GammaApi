@@ -1,17 +1,19 @@
-require('dotenv').config(); // Debe ser la PRIMERA línea
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 const express = require('express');
 const cors = require('cors');
 const fs = require('fs');
-const path = require('path');
-const pool = require('./db/db');
-const contactoRoute = require("./routes/contactoRoute");
-const authRoutes = require('./routes/authRoutes');
 
-// 📁 Crear carpeta de uploads si no existe
-const uploadsDir = path.join(__dirname, './uploads/imagenes');
+// 📁 Definir rutas de uploads para evitar ReferenceError
+const uploadsPath = path.resolve(__dirname, './uploads');
+const uploadsDir = path.join(uploadsPath, 'imagenes');
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
+
+const pool = require('./db/db');
+const contactoRoute = require("./routes/contactoRoute");
+const authRoutes = require('./routes/authRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -58,17 +60,17 @@ app.get('/api/health', async (_req, res) => {
       status: 'error',
       db: 'unreachable',
       detail: err.message,
-      env: {
-        host: process.env.DB_HOST,
-        user: process.env.DB_USER,
-        database: process.env.DB_NAME
+      diagnostics: {
+        env_path: path.join(__dirname, '.env'),
+        env_exists: fs.existsSync(path.join(__dirname, '.env')),
+        db_user: process.env.DB_USER ? 'SET' : 'MISSING',
+        db_host: process.env.DB_HOST || 'NOT SET'
       }
     });
   }
 });
 
-// Servir imágenes subidas (en GammaApi/uploads/imagenes)
-const uploadsPath = path.resolve(__dirname, './uploads');
+// Servir imágenes subidas
 console.log(`📁 Sirviendo uploads desde: ${uploadsPath}`);
 app.use('/uploads', express.static(uploadsPath));
 
