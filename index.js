@@ -1,8 +1,8 @@
-const path = require('path');
-require('dotenv').config({ path: path.join(__dirname, '.env') });
+require('dotenv').config(); // Debe ser la PRIMERA línea
 const express = require('express');
 const cors = require('cors');
 const fs = require('fs');
+const path = require('path');
 
 // 📁 Definir rutas de uploads para evitar ReferenceError
 const uploadsPath = path.resolve(__dirname, './uploads');
