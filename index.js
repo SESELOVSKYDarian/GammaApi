@@ -1,104 +1,67 @@
-require('dotenv').config(); // Debe ser la PRIMERA línea
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
-
-// 📁 Definir rutas de uploads al inicio para evitar ReferenceError
-const uploadsPath = path.resolve(__dirname, './uploads');
-const uploadsDir = path.join(uploadsPath, 'imagenes');
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-}
-
 const pool = require('./db/db');
-const contactoRoute = require("./routes/contactoRoute");
-const authRoutes = require('./routes/authRoutes');
+
+// Paths for assets
+const uploadsPath = path.resolve(__dirname, './uploads');
+const familiesPath = path.join(__dirname, '../GammaVase/public/assets/familias');
+const ideasPath = path.join(__dirname, '../GammaVase/public/ideas');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
 const allowedOrigins = process.env.FRONTEND_URLS
-  ? process.env.FRONTEND_URLS.split(',').map((url) => url.trim())
-  : ['http://localhost:5173', 'http://localhost:5175'];
+  ? process.env.FRONTEND_URLS.split(',').map(url => url.trim())
+  : ['http://localhost:5173'];
 
-// ✅ 1. CORS va primero
-app.use(cors({
-  origin: allowedOrigins,
-  credentials: true,
-}));
-
-// ✅ 2. JSON también antes de las rutas
+app.use(cors({ origin: allowedOrigins, credentials: true }));
 app.use(express.json());
 
-// ✅ 3. Tus rutas
-app.use('/api', authRoutes);
-app.use("/api/contacto", contactoRoute);
+// Main Routes
+app.use('/api', require('./routes/authRoutes'));
+app.use('/api/contacto', require('./routes/contactoRoute'));
 app.use('/api/familias', require('./routes/familiasRoutes'));
 app.use('/api/usuarios', require('./routes/usuariosRoutes'));
 app.use('/api/productos', require('./routes/productosRoutes'));
 app.use('/api/precios', require('./routes/preciosRoutes'));
-app.use('/api/login', require('./routes/authRoutes'));
 app.use('/api/ideas', require('./routes/ideasRoutes'));
 
-// 🔀 Alias sin prefijo /api para compatibilidad con el frontend antiguo
+// Compatibility / Health
 app.use('/usuarios', require('./routes/usuariosRoutes'));
-
-// 🩺 Ruta de salud para validar que el servicio y la DB responden
-app.get('/api/health', async (_req, res) => {
+app.get('/api/health', async (req, res) => {
   try {
     await pool.query('SELECT 1');
-    const uploadsExists = fs.existsSync(uploadsDir);
-    res.json({
-      status: 'ok',
-      db: 'connected',
-      uploads: uploadsExists ? 'ok' : 'missing',
-      uploadsPath: uploadsPath
-    });
+    res.json({ status: 'ok', db: 'connected', user: process.env.DB_USER });
   } catch (err) {
-    console.error('❌ Healthcheck DB error:', err);
-    res.status(500).json({
-      status: 'error',
-      db: 'unreachable',
-      detail: err.message
-    });
+    res.status(500).json({ status: 'error', detail: err.message, env_user: process.env.DB_USER });
   }
 });
 
-// Servir imágenes subidas
-console.log(`📁 Sirviendo uploads desde: ${uploadsPath}`);
+// Static Files
 app.use('/uploads', express.static(uploadsPath));
+app.use('/familias', express.static(familiesPath));
+app.use('/assets/familias', express.static(familiesPath));
+app.use('/ideas', express.static(ideasPath));
 
-// Servir archivos estáticos del frontend
-app.use('/imgCata', express.static(path.join(__dirname, '../GammaVase/public/imgCata')));
-app.use('/ideas', express.static(path.join(__dirname, '../GammaVase/public/ideas')));
-app.use('/familias', express.static(path.join(__dirname, '../GammaVase/public/assets/familias')));
-app.use('/assets/familias', express.static(path.join(__dirname, '../GammaVase/public/assets/familias')));
-
-// Serve frontend build when available
-const frontendBuildPath = path.join(__dirname, '../GammaVase/dist');
-if (fs.existsSync(frontendBuildPath)) {
-  app.use(express.static(frontendBuildPath));
+// Frontend Build fallback
+const distPath = path.join(__dirname, '../GammaVase/dist');
+if (fs.existsSync(distPath)) {
+  app.use(express.static(distPath));
   app.get('*', (req, res, next) => {
     if (req.path.startsWith('/api')) return next();
-    return res.sendFile(path.join(frontendBuildPath, 'index.html'));
-  });
-} else {
-  // Respuesta simple para evitar "Cannot GET /" cuando no hay build estático
-  app.get('/', (_req, res) => {
-    res.json({ status: 'ok', message: 'Gamma API en ejecución' });
+    res.sendFile(path.join(distPath, 'index.html'));
   });
 }
 
-// ❌ Middleware global para errores
+// Global Error Handler
 app.use((err, req, res, next) => {
-  console.error('❌ Error global:', err);
-  res.status(500).json({
-    success: false,
-    error: err.message || 'Error interno del servidor',
-    details: process.env.NODE_ENV === 'development' ? err.stack : undefined
-  });
+  console.error(err);
+  res.status(500).json({ error: err.message });
 });
 
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Servidor escuchando en http://localhost:${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
 });
