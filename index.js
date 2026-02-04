@@ -17,7 +17,12 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const allowedOrigins = process.env.FRONTEND_URLS
   ? process.env.FRONTEND_URLS.split(',').map((url) => url.trim())
-  : ['http://localhost:5173', 'http://localhost:5175'];
+  : [
+    'http://localhost:5173',
+    'http://localhost:5175',
+    'https://gammamodas.com.ar',
+    'https://www.gammamodas.com.ar'
+  ];
 
 // ✅ 1. CORS va primero
 app.use(cors({
