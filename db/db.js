@@ -29,7 +29,7 @@ const pool = mysql.createPool({
   database,
   port: process.env.DB_PORT ? Number(process.env.DB_PORT) : undefined,
   waitForConnections: true,
-  connectionLimit: parseInt(process.env.DB_POOL_SIZE || '10', 10),
+  connectionLimit: parseInt(process.env.DB_POOL_SIZE || '2', 10),
   ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : undefined,
 });
 
