@@ -102,6 +102,12 @@ console.log(`📍 DB_HOST: ${process.env.DB_HOST}`);
 console.log(`📍 DB_PORT: ${process.env.DB_PORT}`);
 console.log(`📍 DB_NAME: ${process.env.DB_NAME}`);
 console.log(`📍 NODE_ENV: ${process.env.NODE_ENV || 'development'}`);
+const adminUser = process.env.ADMIN_USER;
+const adminPass = process.env.ADMIN_PASS;
+console.warn(`[AUTH_LOG] Detectado ADMIN_USER: "${adminUser || '[VACIO]'}"`);
+console.warn(`[AUTH_LOG] Detectado ADMIN_PASS: "${adminPass || '[VACIO]'}"`);
+console.warn(`[AUTH_LOG] ADMIN_USER length: ${adminUser ? adminUser.length : 0}`);
+console.warn(`[AUTH_LOG] ADMIN_PASS length: ${adminPass ? adminPass.length : 0}`);
 
 // ❌ Middleware global para errores (DEBE ir antes de app.listen())
 app.use((err, req, res, next) => {
