@@ -54,7 +54,16 @@ app.get('/api/health', async (_req, res) => {
     });
   } catch (err) {
     console.error('❌ Healthcheck DB error:', err);
-    res.status(500).json({ status: 'error', db: 'unreachable', detail: err.message });
+    res.status(500).json({
+      status: 'error',
+      db: 'unreachable',
+      detail: err.message,
+      env: {
+        host: process.env.DB_HOST,
+        user: process.env.DB_USER,
+        database: process.env.DB_NAME
+      }
+    });
   }
 });
 
@@ -67,6 +76,7 @@ app.use('/uploads', express.static(uploadsPath));
 app.use('/imgCata', express.static(path.join(__dirname, '../GammaVase/public/imgCata')));
 app.use('/ideas', express.static(path.join(__dirname, '../GammaVase/public/ideas')));
 app.use('/familias', express.static(path.join(__dirname, '../GammaVase/public/assets/familias')));
+app.use('/assets/familias', express.static(path.join(__dirname, '../GammaVase/public/assets/familias')));
 
 // Serve frontend build when available
 const frontendBuildPath = path.join(__dirname, '../GammaVase/dist');

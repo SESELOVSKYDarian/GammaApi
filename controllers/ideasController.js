@@ -27,7 +27,7 @@ const getIdeas = async (_req, res) => {
     res.json(categories);
   } catch (err) {
     console.error('Error fetching ideas', err);
-    res.status(500).json({ error: 'Error fetching ideas' });
+    res.status(500).json({ error: 'Error fetching ideas', details: err.message });
   }
 };
 
