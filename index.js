@@ -1,9 +1,14 @@
-require('dotenv').config(); // Debe ser la PRIMERA línea
 const express = require('express');
 const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
 const pool = require('./db/db');
+
+// Solo cargar .env desde archivo cuando NO estás en producción
+if (process.env.NODE_ENV !== 'production') {
+  require('dotenv').config();
+}
+
 const contactoRoute = require("./routes/contactoRoute");
 const authRoutes = require('./routes/authRoutes');
 
@@ -15,6 +20,8 @@ if (!fs.existsSync(uploadsDir)) {
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// En Hostinger production, process.env.FRONTEND_URLS estará definido en el panel
 const allowedOrigins = process.env.FRONTEND_URLS
   ? process.env.FRONTEND_URLS.split(',').map((url) => url.trim())
   : [
