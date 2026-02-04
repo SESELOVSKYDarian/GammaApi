@@ -41,10 +41,19 @@ router.post('/login', async (req, res) => {
 router.post('/admin/login', async (req, res) => {
   const { admin, contrasena } = req.body;
 
+  console.log('Login Request Body:', req.body);
+  console.log('Env User Configured:', process.env.ADMIN_USER ? 'YES' : 'NO');
+  console.log('Env Pass Configured:', process.env.ADMIN_PASS ? 'YES' : 'NO');
+
+  // Debug comparison (remove in production later)
+  console.log(`Comparing: InputUser="${admin}" vs EnvUser="${process.env.ADMIN_USER}"`);
+  console.log(`Comparing: InputPass="${contrasena ? '***' : 'null'}" vs EnvPass="${process.env.ADMIN_PASS ? '***' : 'null'}"`);
+
   if (
     admin !== process.env.ADMIN_USER ||
     contrasena !== process.env.ADMIN_PASS
   ) {
+    console.warn('❌ Credential Mismatch');
     return res.status(401).json({ mensaje: 'Credenciales inválidas' });
   }
   const code = Math.floor(100000 + Math.random() * 900000).toString();
