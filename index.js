@@ -4,7 +4,7 @@ const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
 
-// 📁 Definir rutas de uploads para evitar ReferenceError
+// 📁 Definir rutas de uploads al inicio para evitar ReferenceError
 const uploadsPath = path.resolve(__dirname, './uploads');
 const uploadsDir = path.join(uploadsPath, 'imagenes');
 if (!fs.existsSync(uploadsDir)) {
@@ -47,7 +47,7 @@ app.use('/usuarios', require('./routes/usuariosRoutes'));
 app.get('/api/health', async (_req, res) => {
   try {
     await pool.query('SELECT 1');
-    const uploadsExists = fs.existsSync(uploadsPath);
+    const uploadsExists = fs.existsSync(uploadsDir);
     res.json({
       status: 'ok',
       db: 'connected',
@@ -59,13 +59,7 @@ app.get('/api/health', async (_req, res) => {
     res.status(500).json({
       status: 'error',
       db: 'unreachable',
-      detail: err.message,
-      diagnostics: {
-        env_path: path.join(__dirname, '.env'),
-        env_exists: fs.existsSync(path.join(__dirname, '.env')),
-        db_user: process.env.DB_USER ? 'SET' : 'MISSING',
-        db_host: process.env.DB_HOST || 'NOT SET'
-      }
+      detail: err.message
     });
   }
 });
@@ -74,7 +68,7 @@ app.get('/api/health', async (_req, res) => {
 console.log(`📁 Sirviendo uploads desde: ${uploadsPath}`);
 app.use('/uploads', express.static(uploadsPath));
 
-// Servir archivos estáticos del frontend (compatibilidad con rutas antiguas si existen)
+// Servir archivos estáticos del frontend
 app.use('/imgCata', express.static(path.join(__dirname, '../GammaVase/public/imgCata')));
 app.use('/ideas', express.static(path.join(__dirname, '../GammaVase/public/ideas')));
 app.use('/familias', express.static(path.join(__dirname, '../GammaVase/public/assets/familias')));
@@ -95,19 +89,7 @@ if (fs.existsSync(frontendBuildPath)) {
   });
 }
 
-// ❗ OPCIONAL: si ya usás `/api/login` desde authRoutes.js, esta ruta extra de admin podrías dejarla o renombrarla:
-
-
-// ✅ Las rutas de productos están manejadas por productosRoutes
-// No duplicar aquí para evitar conflictos
-
-// 🔧 DEBUG: Log variables de entorno (sin exponer credenciales)
-console.log(`📍 DB_HOST: ${process.env.DB_HOST}`);
-console.log(`📍 DB_PORT: ${process.env.DB_PORT}`);
-console.log(`📍 DB_NAME: ${process.env.DB_NAME}`);
-console.log(`📍 NODE_ENV: ${process.env.NODE_ENV || 'development'}`);
-
-// ❌ Middleware global para errores (DEBE ir antes de app.listen())
+// ❌ Middleware global para errores
 app.use((err, req, res, next) => {
   console.error('❌ Error global:', err);
   res.status(500).json({
