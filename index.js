@@ -1,13 +1,9 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
 const pool = require('./db/db');
-
-// Solo cargar .env desde archivo cuando NO estás en producción
-if (process.env.NODE_ENV !== 'production') {
-  require('dotenv').config();
-}
 
 const contactoRoute = require("./routes/contactoRoute");
 const authRoutes = require('./routes/authRoutes');
