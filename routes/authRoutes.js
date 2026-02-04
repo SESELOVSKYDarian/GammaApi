@@ -6,13 +6,7 @@ const nodemailer = require('nodemailer');
 let adminCode = null;
 let adminCodeExp = null;
 
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
+// Transporter initialization moved to route to prevent startup crash if env vars are missing
 
 router.post('/login', async (req, res) => {
   const { id, contrasena } = req.body;
@@ -51,6 +45,14 @@ router.post('/admin/login', async (req, res) => {
   adminCode = code;
   adminCodeExp = Date.now() + 5 * 60 * 1000;
   try {
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+    });
+
     await transporter.sendMail({
       from: process.env.EMAIL_USER,
       to: process.env.ADMIN_EMAIL,
