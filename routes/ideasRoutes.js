@@ -12,7 +12,6 @@ const {
 } = require('../controllers/ideasController');
 
 router.get('/', getIdeas);
-router.get('/categories', getIdeas);
 router.post('/categories', uploadIdeas.single('image'), createCategory);
 router.put('/categories/:id', uploadIdeas.single('image'), updateCategory);
 router.post('/items', uploadIdeas.fields([{ name: 'file' }, { name: 'image' }]), createItem);

@@ -70,7 +70,7 @@ router.delete('/:id', async (req, res) => {
 router.put('/:id', upload.single('imagen'), async (req, res) => {
     const { id } = req.params;
     const { gran_familia, tipo_familia, usar_imagen } = req.body;
-    const imgPath = req.file ? `/familias/${req.file.filename}` : null;
+    const imgPath = req.file ? `assets/familias/${req.file.filename}` : null;
     try {
         let query = 'UPDATE familias SET gran_familia = ?, tipo_familia = ?, usar_imagen = ?';
         const params = [gran_familia, tipo_familia, usar_imagen === 'true'];
