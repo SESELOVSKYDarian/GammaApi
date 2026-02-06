@@ -58,7 +58,6 @@ const normalizeProducts = (products, req) => {
 // Agregar producto con imagen
 router.post("/", upload.array("imagenes", 5), async (req, res) => {
   const {
-    id,
     articulo,
     descripcion,
     familia_id,
@@ -75,47 +74,24 @@ router.post("/", upload.array("imagenes", 5), async (req, res) => {
   try {
     const img_articulo = req.files.map((file) => `/uploads/imagenes/${file.filename}`);
     const sliderValue = slider === "true" || slider === true;
-    const parsedId = id ? parseInt(id, 10) : null;
-    if (!id || !Number.isInteger(parsedId) || parsedId <= 0) {
-      return res.status(400).json({ error: "ID obligatorio e inválido" });
-    }
-
-    const columns = [
-      "articulo",
-      "descripcion",
-      "familia_id",
-      "linea",
-      "img_articulo",
-      "codigo_color",
-      "stock",
-      "url",
-      "precio",
-      "precio_minorista",
-      "precio_mayorista",
-      "slider",
-    ];
-    const values = [
-      articulo,
-      descripcion,
-      familia_id,
-      linea,
-      img_articulo,
-      codigo_color,
-      stock,
-      url,
-      precio,
-      precio_minorista,
-      precio_mayorista,
-      sliderValue,
-    ];
-
-    columns.unshift("id");
-    values.unshift(parsedId);
-
-    const placeholders = columns.map(() => "?").join(", ");
     const result = await pool.query(
-      `INSERT INTO productos (${columns.join(", ")}) VALUES (${placeholders})`,
-      values
+      `INSERT INTO productos
+      (articulo, descripcion, familia_id, linea, img_articulo, codigo_color, stock, url, precio, precio_minorista, precio_mayorista, slider)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        articulo,
+        descripcion,
+        familia_id,
+        linea,
+        img_articulo,
+        codigo_color,
+        stock,
+        url,
+        precio,
+        precio_minorista,
+        precio_mayorista,
+        sliderValue
+      ]
     );
 
     const created = await pool.query(
@@ -123,14 +99,11 @@ router.post("/", upload.array("imagenes", 5), async (req, res) => {
        FROM productos
        LEFT JOIN familias ON productos.familia_id = familias.id
        WHERE productos.id = ?`,
-      [parsedId || result.insertId]
+      [result.insertId]
     );
 
     res.json(normalizeProduct(created.rows[0] || {}, req));
   } catch (err) {
-    if (err && (err.code === "ER_DUP_ENTRY" || err.errno === 1062)) {
-      return res.status(409).json({ error: "Ya existe un producto con ese ID" });
-    }
     console.error("❌ Error al guardar producto:", err);
     res.status(500).json({ error: err.message });
   }
@@ -218,7 +191,6 @@ router.get("/color-codes", async (req, res) => {
 router.put("/:id", upload.array("imagenes", 5), async (req, res) => {
   const { id } = req.params;
   const {
-    id: newId,
     articulo,
     descripcion,
     familia_id,
@@ -233,10 +205,6 @@ router.put("/:id", upload.array("imagenes", 5), async (req, res) => {
   } = req.body;
 
   try {
-    const parsedNewId = newId ? parseInt(newId, 10) : null;
-    if (newId && (!Number.isInteger(parsedNewId) || parsedNewId <= 0)) {
-      return res.status(400).json({ error: "ID inválido" });
-    }
     const img_articulo = req.files && req.files.length
       ? req.files.map((file) => `/uploads/imagenes/${file.filename}`)
       : null;
@@ -256,30 +224,22 @@ router.put("/:id", upload.array("imagenes", 5), async (req, res) => {
     ];
     let query = `UPDATE productos SET articulo=?, descripcion=?, familia_id=?, linea=?, codigo_color=?, stock=?, url=?, precio=?, precio_minorista=?, precio_mayorista=?, slider=?`;
     if (img_articulo) {
-      query += `, img_articulo=?`;
-      baseFields.push(img_articulo);
+      query += `, img_articulo=? WHERE id=?`;
+      baseFields.push(img_articulo, id);
     } else {
-      query += ``;
+      query += ` WHERE id=?`;
+      baseFields.push(id);
     }
-    if (parsedNewId && parsedNewId !== parseInt(id, 10)) {
-      query += `, id=?`;
-      baseFields.push(parsedNewId);
-    }
-    query += ` WHERE id=?`;
-    baseFields.push(id);
     await pool.query(query, baseFields);
     const updated = await pool.query(
       `SELECT productos.*, familias.gran_familia, familias.tipo_familia
        FROM productos
        LEFT JOIN familias ON productos.familia_id = familias.id
        WHERE productos.id = ?`,
-      [parsedNewId || id]
+      [id]
     );
     res.json(normalizeProduct(updated.rows[0], req));
   } catch (err) {
-    if (err && (err.code === "ER_DUP_ENTRY" || err.errno === 1062)) {
-      return res.status(409).json({ error: "Ya existe un producto con ese ID" });
-    }
     console.error("❌ Error al actualizar producto:", err);
     res.status(500).json({ error: err.message });
   }
