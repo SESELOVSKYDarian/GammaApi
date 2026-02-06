@@ -73,7 +73,10 @@ app.use('/uploads', express.static(uploadsPath));
 
 // Servir archivos estáticos del frontend (compatibilidad con rutas antiguas si existen)
 app.use('/imgCata', express.static(path.join(__dirname, '../GammaVase/public/imgCata')));
-app.use('/ideas', express.static(path.join(__dirname, '../GammaVase/public/ideas')));
+const ideasStaticDir = fs.existsSync(path.join(__dirname, '../GammaVase/public/ideas'))
+  ? path.join(__dirname, '../GammaVase/public/ideas')
+  : path.join(__dirname, './uploads/ideas');
+app.use('/ideas', express.static(ideasStaticDir));
 app.use('/familias', express.static(path.join(__dirname, '../GammaVase/public/assets/familias')));
 
 // Serve frontend build when available

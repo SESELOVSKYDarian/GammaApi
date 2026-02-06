@@ -2,6 +2,10 @@ const pool = require('../db/db');
 
 const getIdeas = async (_req, res) => {
   try {
+    // Prevent CDN/proxy caching for dynamic ideas data
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
     const categoriesRes = await pool.query(
       'SELECT id, name, image_url FROM idea_categories ORDER BY id'
     );
