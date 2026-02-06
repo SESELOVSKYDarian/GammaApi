@@ -41,11 +41,11 @@ const createCategory = async (req, res) => {
     );
     const created = await pool.query('SELECT id, name, image_url FROM idea_categories WHERE id = ?', [result.insertId]);
     const category = created.rows[0];
-    if (!category) return res.status(500).json({ error: 'Error creating category' });
+    if (!category) return res.status(500).json({ error: 'Error creating category', detail: 'Category not found after insert' });
     res.status(201).json({ id: category.id, name: category.name, imageUrl: category.image_url });
   } catch (err) {
     console.error('Error creating category', err);
-    res.status(500).json({ error: 'Error creating category' });
+    res.status(500).json({ error: 'Error creating category', detail: err.message });
   }
 };
 
@@ -69,7 +69,7 @@ const updateCategory = async (req, res) => {
     res.json({ id: fetched.rows[0].id, name: fetched.rows[0].name, imageUrl: fetched.rows[0].image_url });
   } catch (err) {
     console.error('Error updating category', err);
-    res.status(500).json({ error: 'Error updating category' });
+    res.status(500).json({ error: 'Error updating category', detail: err.message });
   }
 };
 
@@ -92,7 +92,7 @@ const createItem = async (req, res) => {
       'SELECT id, category_id, title, type, url, image_url FROM idea_items WHERE id = ?',
       [result.insertId]
     );
-    if (!inserted.rows[0]) return res.status(500).json({ error: 'Error creating item' });
+    if (!inserted.rows[0]) return res.status(500).json({ error: 'Error creating item', detail: 'Item not found after insert' });
     res.status(201).json({
       id: inserted.rows[0].id,
       category_id: inserted.rows[0].category_id,
@@ -103,7 +103,7 @@ const createItem = async (req, res) => {
     });
   } catch (err) {
     console.error('Error creating item', err);
-    res.status(500).json({ error: 'Error creating item' });
+    res.status(500).json({ error: 'Error creating item', detail: err.message });
   }
 };
 
@@ -137,7 +137,7 @@ const updateItem = async (req, res) => {
     });
   } catch (err) {
     console.error('Error updating item', err);
-    res.status(500).json({ error: 'Error updating item' });
+    res.status(500).json({ error: 'Error updating item', detail: err.message });
   }
 };
 
@@ -161,7 +161,7 @@ const deleteCategory = async (req, res) => {
   } catch (err) {
     await client.rollback();
     console.error('Error deleting category', err);
-    res.status(500).json({ error: 'Error deleting category' });
+    res.status(500).json({ error: 'Error deleting category', detail: err.message });
   } finally {
     client.release();
   }
@@ -179,7 +179,7 @@ const deleteItem = async (req, res) => {
     res.sendStatus(204);
   } catch (err) {
     console.error('Error deleting item', err);
-    res.status(500).json({ error: 'Error deleting item' });
+    res.status(500).json({ error: 'Error deleting item', detail: err.message });
   }
 };
 

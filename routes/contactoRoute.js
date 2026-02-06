@@ -69,7 +69,7 @@ router.post("/", async (req, res) => {
     console.error("❌ Nodemailer error object:", error);
     console.error("❌ Nodemailer error message:", error.message);
     console.error("❌ Error al enviar email:", error);
-    res.status(500).json({ success: false, message: "Error al enviar el email" });
+    res.status(500).json({ success: false, message: "Error al enviar el email", detail: err.message });
   }
 
 });

@@ -29,7 +29,7 @@ router.post('/login', async (req, res) => {
     res.json({ usuario });
   } catch (error) {
     console.error('Error al loguear:', error);
-    res.status(500).json({ mensaje: 'Error interno del servidor' });
+    res.status(500).json({ mensaje: 'Error interno del servidor', detail: err.message });
   }
 });
 
@@ -85,7 +85,7 @@ router.post('/admin/login', async (req, res) => {
     });
     res.json({ mensaje: 'Código enviado' });
   } catch (err) {
-    res.status(500).json({ mensaje: err.message });
+    res.status(500).json({ mensaje: err.message, detail: err.message });
   }
 });
 

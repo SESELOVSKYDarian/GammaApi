@@ -105,7 +105,7 @@ router.post("/", upload.array("imagenes", 5), async (req, res) => {
     res.json(normalizeProduct(created.rows[0] || {}, req));
   } catch (err) {
     console.error("❌ Error al guardar producto:", err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: err.message, detail: err.message });
   }
 });
 
@@ -152,7 +152,7 @@ router.get("/", async (req, res) => {
     res.json(normalizeProducts(result.rows, req));
   } catch (err) {
     console.error("❌ Error al obtener productos:", err);
-    res.status(500).json({ error: "Error al obtener productos" });
+    res.status(500).json({ error: "Error al obtener productos", detail: err.message });
   }
 });
 
@@ -241,7 +241,7 @@ router.put("/:id", upload.array("imagenes", 5), async (req, res) => {
     res.json(normalizeProduct(updated.rows[0], req));
   } catch (err) {
     console.error("❌ Error al actualizar producto:", err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: err.message, detail: err.message });
   }
 });
 
@@ -253,7 +253,7 @@ router.delete("/:id", async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     console.error("❌ Error al eliminar producto:", err);
-    res.status(500).json({ error: "Error al eliminar producto" });
+    res.status(500).json({ error: "Error al eliminar producto", detail: err.message });
   }
 });
 
@@ -277,7 +277,7 @@ router.get('/slug/:slug', async (req, res) => {
     res.json(normalizeProduct(result.rows[0], req));
   } catch (err) {
     console.error("❌ Error al obtener producto por slug:", err);
-    res.status(500).json({ error: "Error interno del servidor" });
+    res.status(500).json({ error: "Error interno del servidor", detail: err.message });
   }
 });
 
@@ -297,7 +297,7 @@ router.get("/familia/:familia_id", async (req, res) => {
     res.json(normalizeProducts(result.rows, req));
   } catch (err) {
     console.error("❌ Error al obtener productos por familia:", err);
-    res.status(500).json({ error: "Error al obtener productos relacionados" });
+    res.status(500).json({ error: "Error al obtener productos relacionados", detail: err.message });
   }
 });
 
@@ -313,7 +313,7 @@ router.get("/slider", async (req, res) => {
     res.json(normalizeProducts(result.rows, req));
   } catch (err) {
     console.error("❌ Error al obtener productos del slider:", err);
-    res.status(500).json({ error: "Error al obtener productos del slider" });
+    res.status(500).json({ error: "Error al obtener productos del slider", detail: err.message });
   }
 });
 
@@ -337,7 +337,7 @@ router.patch("/:id/slider", async (req, res) => {
     res.json(normalizeProduct(result.rows[0], req));
   } catch (err) {
     console.error("❌ Error al actualizar slider:", err);
-    res.status(500).json({ error: "Error al actualizar slider" });
+    res.status(500).json({ error: "Error al actualizar slider", detail: err.message });
   }
 });
 

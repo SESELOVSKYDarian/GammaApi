@@ -20,7 +20,7 @@ router.get('/', async (_, res) => {
         const result = await pool.query('SELECT * FROM familias');
         res.json(result.rows);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: err.message, detail: err.message });
     }
 });
 
@@ -52,7 +52,7 @@ router.post('/', upload.single('imagen'), async (req, res) => {
         }
         res.json(inserted.length === 1 ? inserted[0] : inserted);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: err.message, detail: err.message });
     }
 });
 
@@ -62,7 +62,7 @@ router.delete('/:id', async (req, res) => {
         await pool.query('DELETE FROM familias WHERE id = ?', [req.params.id]);
         res.json({ success: true });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: err.message, detail: err.message });
     }
 });
 
@@ -85,7 +85,7 @@ router.put('/:id', upload.single('imagen'), async (req, res) => {
         const updated = await pool.query('SELECT * FROM familias WHERE id = ?', [id]);
         res.json(updated.rows[0]);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: err.message, detail: err.message });
     }
 });
 
