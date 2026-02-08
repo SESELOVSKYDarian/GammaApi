@@ -29,7 +29,7 @@ CREATE TABLE precios (
 );
 
 CREATE TABLE productos (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    id INT NOT NULL PRIMARY KEY,
     articulo TEXT NOT NULL,
     familia_id INT NOT NULL,
     linea TEXT NOT NULL,
@@ -46,7 +46,7 @@ CREATE TABLE productos (
 );
 
 CREATE TABLE usuarios (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    id INT NOT NULL PRIMARY KEY,
     cliente TEXT,
     contrasena TEXT,
     rol VARCHAR(50) DEFAULT 'cliente',

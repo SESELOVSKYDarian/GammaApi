@@ -58,6 +58,7 @@ const normalizeProducts = (products, req) => {
 // Agregar producto con imagen
 router.post("/", upload.array("imagenes", 5), async (req, res) => {
   const {
+    id,
     articulo,
     descripcion,
     familia_id,
@@ -71,14 +72,19 @@ router.post("/", upload.array("imagenes", 5), async (req, res) => {
     slider
   } = req.body;
 
+  if (!id) {
+    return res.status(400).json({ error: "id requerido" });
+  }
+
   try {
     const img_articulo = req.files.map((file) => `/uploads/imagenes/${file.filename}`);
     const sliderValue = slider === "true" || slider === true;
     const result = await pool.query(
       `INSERT INTO productos
-      (articulo, descripcion, familia_id, linea, img_articulo, codigo_color, stock, url, precio, precio_minorista, precio_mayorista, slider)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      (id, articulo, descripcion, familia_id, linea, img_articulo, codigo_color, stock, url, precio, precio_minorista, precio_mayorista, slider)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
+        id,
         articulo,
         descripcion,
         familia_id,

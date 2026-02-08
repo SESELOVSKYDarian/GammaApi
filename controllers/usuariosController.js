@@ -16,13 +16,16 @@ exports.getUsuarios = async (req, res) => {
 
 // Crear usuario
 exports.createUsuario = async (req, res) => {
-  const { cliente, contrasena, rol, lista_de_precio } = req.body;
+  const { id, cliente, contrasena, rol, lista_de_precio } = req.body;
 
   try {
+    if (!id) {
+      return res.status(400).json({ error: "id requerido" });
+    }
     const result = await pool.query(
-      `INSERT INTO usuarios (cliente, contrasena, rol, lista_de_precio)
-       VALUES (?, ?, ?, ?)`,
-      [cliente, contrasena, rol || 'cliente', lista_de_precio]
+      `INSERT INTO usuarios (id, cliente, contrasena, rol, lista_de_precio)
+       VALUES (?, ?, ?, ?, ?)`,
+      [id, cliente, contrasena, rol || 'cliente', lista_de_precio]
     );
     const created = await pool.query('SELECT * FROM usuarios WHERE id = ?', [result.insertId]);
     res.status(201).json(created.rows[0]);
