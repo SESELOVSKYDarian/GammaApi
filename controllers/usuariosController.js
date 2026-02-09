@@ -27,8 +27,9 @@ exports.createUsuario = async (req, res) => {
        VALUES (?, ?, ?, ?, ?)`,
       [id, cliente, contrasena, rol || 'cliente', lista_de_precio]
     );
-    const created = await pool.query('SELECT * FROM usuarios WHERE id = ?', [result.insertId]);
-    res.status(201).json(created.rows[0]);
+    const created = await pool.query('SELECT * FROM usuarios WHERE id = ?', [id]);
+    const createdRow = created.rows[0] || { id, cliente, contrasena, rol: rol || 'cliente', lista_de_precio };
+    res.status(201).json(createdRow);
   } catch (err) {
     console.error("Error en createUsuario:", err);
     res.status(500).json({ error: err.message, detail: err.message });

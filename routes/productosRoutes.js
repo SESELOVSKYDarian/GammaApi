@@ -75,9 +75,19 @@ router.post("/", upload.array("imagenes", 5), async (req, res) => {
   if (!id) {
     return res.status(400).json({ error: "id requerido" });
   }
+  if (!familia_id) {
+    return res.status(400).json({ error: "familia_id requerido" });
+  }
 
   try {
-    const img_articulo = req.files.map((file) => `/uploads/imagenes/${file.filename}`);
+    const familia = await pool.query("SELECT id FROM familias WHERE id = ?", [familia_id]);
+    if (!familia.rows.length) {
+      return res.status(400).json({ error: "familia_id inexistente" });
+    }
+
+    const img_articulo = (req.files && req.files.length)
+      ? req.files.map((file) => `/uploads/imagenes/${file.filename}`)
+      : [];
     const sliderValue = slider === "true" || slider === true;
     const result = await pool.query(
       `INSERT INTO productos
@@ -105,7 +115,7 @@ router.post("/", upload.array("imagenes", 5), async (req, res) => {
        FROM productos
        LEFT JOIN familias ON productos.familia_id = familias.id
        WHERE productos.id = ?`,
-      [result.insertId]
+      [id]
     );
 
     res.json(normalizeProduct(created.rows[0] || {}, req));
