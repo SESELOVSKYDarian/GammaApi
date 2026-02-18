@@ -17,21 +17,39 @@ if (!fs.existsSync(uploadsDir)) {
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// En Hostinger production, process.env.FRONTEND_URLS estará definido en el panel
-const allowedOrigins = process.env.FRONTEND_URLS
-  ? process.env.FRONTEND_URLS.split(',').map((url) => url.trim())
-  : [
-    'http://localhost:5173',
-    'http://localhost:5175',
-    'https://gammamodas.com.ar',
-    'https://www.gammamodas.com.ar'
-  ];
+// En Hostinger production, process.env.FRONTEND_URLS estara definido en el panel
+const defaultOrigins = [
+  'http://localhost:5173',
+  'http://localhost:5175',
+  'https://gammamodas.com.ar',
+  'https://www.gammamodas.com.ar'
+];
+const envOrigins = process.env.FRONTEND_URLS
+  ? process.env.FRONTEND_URLS.split(/[,\s]+/).map((url) => url.trim()).filter(Boolean)
+  : [];
+const allowedOrigins = new Set([...defaultOrigins, ...envOrigins]);
 
-// ✅ 1. CORS va primero
-app.use(cors({
-  origin: allowedOrigins,
+const corsOptions = {
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, false);
+    if (allowedOrigins.has(origin)) return callback(null, origin);
+    return callback(null, false);
+  },
   credentials: true,
-}));
+};
+
+// 1. CORS va primero y con Vary: Origin para evitar caches mezclados
+app.use((req, res, next) => {
+  const vary = res.getHeader('Vary');
+  if (!vary) {
+    res.setHeader('Vary', 'Origin');
+  } else if (!String(vary).includes('Origin')) {
+    res.setHeader('Vary', `${vary}, Origin`);
+  }
+  next();
+});
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 
 // ✅ 2. JSON también antes de las rutas
 app.use(express.json());
